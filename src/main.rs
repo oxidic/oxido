@@ -1,6 +1,6 @@
-use std::{collections::HashMap, fs};
-use std::env;
 use logos::{Lexer, Logos};
+use std::env;
+use std::{collections::HashMap, fs};
 
 mod util;
 
@@ -52,15 +52,14 @@ fn main() {
 
     let filename = &args[1];
 
-    let contents = fs::read_to_string(filename)
-        .expect("Something went wrong reading the file");
+    let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
 
     let lines: Vec<&str> = contents.lines().filter(|line| line != &"").collect();
 
     for line in lines {
         store = parse(line, store);
     }
-        
+
     println!("DEBUG: {:?}", store);
 }
 
@@ -85,7 +84,10 @@ fn parse<'a>(line: &'a str, mut store: HashMap<&'a str, String>) -> HashMap<&'a 
     store
 }
 
-fn parse_assignment<'a>(mut lex: Lexer<'a, Token>, mut store: HashMap<&'a str, String>) -> HashMap<&'a str, String> {
+fn parse_assignment<'a>(
+    mut lex: Lexer<'a, Token>,
+    mut store: HashMap<&'a str, String>,
+) -> HashMap<&'a str, String> {
     // TOKEN: LET
     lex.next();
 
@@ -122,30 +124,44 @@ fn parse_expression(mut lex: Lexer<Token>) -> String {
     let rhs = lex.slice();
 
     if lhs_type != rhs_type {
-        panic!("TypeError: Expected types of {} and {} to be same!", lhs, rhs)
+        panic!(
+            "TypeError: Expected types of {} and {} to be same, found types {:?} and {:?} instead!",
+            lhs, rhs, lhs_type, rhs_type
+        )
     }
     match lhs_type {
-        Token::Number => {
-            match op {
-                Token::AddOperator => (lhs.parse::<i128>().unwrap() + rhs.parse::<i128>().unwrap()).to_string(),
-                Token::SubOperator => (lhs.parse::<i128>().unwrap() - rhs.parse::<i128>().unwrap()).to_string(),
-                Token::MulOperator => (lhs.parse::<i128>().unwrap() * rhs.parse::<i128>().unwrap()).to_string(),
-                Token::DivOperator => (lhs.parse::<i128>().unwrap() / rhs.parse::<i128>().unwrap()).to_string(),
-                Token::PowerOperator => lhs.parse::<i128>().unwrap().pow(rhs.parse::<i128>().unwrap().try_into().unwrap()).to_string(),
-                _ => String::new(),
+        Token::Number => match op {
+            Token::AddOperator => {
+                (lhs.parse::<i128>().unwrap() + rhs.parse::<i128>().unwrap()).to_string()
             }
+            Token::SubOperator => {
+                (lhs.parse::<i128>().unwrap() - rhs.parse::<i128>().unwrap()).to_string()
+            }
+            Token::MulOperator => {
+                (lhs.parse::<i128>().unwrap() * rhs.parse::<i128>().unwrap()).to_string()
+            }
+            Token::DivOperator => {
+                (lhs.parse::<i128>().unwrap() / rhs.parse::<i128>().unwrap()).to_string()
+            }
+            Token::PowerOperator => lhs
+                .parse::<i128>()
+                .unwrap()
+                .pow(rhs.parse::<i128>().unwrap().try_into().unwrap())
+                .to_string(),
+            _ => String::new(),
         },
-        Token::String => {
-            match op {
-                Token::AddOperator => (lhs.to_owned() + rhs).to_string(),
-                _ => String::new(),
-            }
-        }
+        Token::String => match op {
+            Token::AddOperator => (lhs.to_owned() + rhs).to_string(),
+            _ => String::new(),
+        },
         _ => String::new(),
     }
 }
 
-fn parse_print<'a>(mut lex: Lexer<'a, Token>, store: HashMap<&'a str, String>) -> HashMap<&'a str, String> {
+fn parse_print<'a>(
+    mut lex: Lexer<'a, Token>,
+    store: HashMap<&'a str, String>,
+) -> HashMap<&'a str, String> {
     // TOKEN: PRINT
     lex.next();
     // TOKEN: BRACKET
@@ -162,8 +178,8 @@ fn parse_print<'a>(mut lex: Lexer<'a, Token>, store: HashMap<&'a str, String>) -
 
 #[cfg(test)]
 mod tests {
-    use crate::util::get_hash;
     use super::*;
+    use crate::util::get_hash;
 
     #[test]
     fn parse_assignment() {
