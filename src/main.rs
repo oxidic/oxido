@@ -64,21 +64,12 @@ fn main() {
 }
 
 fn parse<'a>(line: &'a str, mut store: HashMap<&'a str, String>) -> HashMap<&'a str, String> {
-    let mut lex = Token::lexer(line);
+    let lex = Token::lexer(line);
 
     match lex.clone().next().unwrap() {
         Token::Let => store = parse_assignment(lex, store),
         Token::Print => store = parse_print(lex, store),
-        _ => {
-            lex.next();
-            let idnt = lex.slice();
-            if store.get(idnt).unwrap() != "" {
-                lex.next();
-
-                lex.next();
-                store.insert(idnt, lex.slice().to_string().replace('"', ""));
-            }
-        }
+        _ => {}
     }
 
     store
@@ -102,7 +93,7 @@ fn parse_assignment<'a>(
     let value: String;
 
     if lex.clone().count() > 2 {
-        value = parse_expression(lex);
+        (value, store) = parse_expression(lex, store);
     } else {
         match lex.next().unwrap() {
             Token::Number => value = lex.slice().parse().unwrap(),
@@ -116,45 +107,69 @@ fn parse_assignment<'a>(
     store
 }
 
-fn parse_expression(mut lex: Lexer<Token>) -> String {
-    let lhs_type = lex.next().unwrap();
-    let lhs = lex.slice();
+fn parse_expression<'a>(
+    mut lex: Lexer<Token>,
+    store: HashMap<&'a str, String>,
+) -> (String, HashMap<&'a str, String>) {
+    let mut lhs_type = lex.next().unwrap();
+    let mut lhs = lex.slice();
     let op = lex.next().unwrap();
     let rhs_type = lex.next().unwrap();
-    let rhs = lex.slice();
+    let mut rhs = lex.slice();
 
     if lhs_type != rhs_type {
-        panic!(
+        if lhs_type != Token::Ident && rhs_type != Token::Ident {
+            panic!(
             "TypeError: Expected types of {} and {} to be same, found types {:?} and {:?} instead!",
             lhs, rhs, lhs_type, rhs_type
         )
+        } else {
+            if lhs_type == Token::Ident {
+                lhs = store.get(lhs).unwrap();
+                if util::is_numeric(lhs) {
+                    lhs_type = Token::Number;
+                } else {
+                    lhs_type = Token::String;
+                }
+            }
+            if rhs_type == Token::Ident {
+                rhs = store.get(rhs).unwrap();
+            };
+        }
     }
+
     match lhs_type {
         Token::Number => match op {
-            Token::AddOperator => {
-                (lhs.parse::<i128>().unwrap() + rhs.parse::<i128>().unwrap()).to_string()
-            }
-            Token::SubOperator => {
-                (lhs.parse::<i128>().unwrap() - rhs.parse::<i128>().unwrap()).to_string()
-            }
-            Token::MulOperator => {
-                (lhs.parse::<i128>().unwrap() * rhs.parse::<i128>().unwrap()).to_string()
-            }
-            Token::DivOperator => {
-                (lhs.parse::<i128>().unwrap() / rhs.parse::<i128>().unwrap()).to_string()
-            }
-            Token::PowerOperator => lhs
-                .parse::<i128>()
-                .unwrap()
-                .pow(rhs.parse::<i128>().unwrap().try_into().unwrap())
-                .to_string(),
-            _ => String::new(),
+            Token::AddOperator => (
+                (lhs.parse::<i128>().unwrap() + rhs.parse::<i128>().unwrap()).to_string(),
+                store,
+            ),
+            Token::SubOperator => (
+                (lhs.parse::<i128>().unwrap() - rhs.parse::<i128>().unwrap()).to_string(),
+                store,
+            ),
+            Token::MulOperator => (
+                (lhs.parse::<i128>().unwrap() * rhs.parse::<i128>().unwrap()).to_string(),
+                store,
+            ),
+            Token::DivOperator => (
+                (lhs.parse::<i128>().unwrap() / rhs.parse::<i128>().unwrap()).to_string(),
+                store,
+            ),
+            Token::PowerOperator => (
+                lhs.parse::<i128>()
+                    .unwrap()
+                    .pow(rhs.parse::<i128>().unwrap().try_into().unwrap())
+                    .to_string(),
+                store,
+            ),
+            _ => (String::new(), store),
         },
         Token::String => match op {
-            Token::AddOperator => (lhs.to_owned() + rhs).to_string(),
-            _ => String::new(),
+            Token::AddOperator => ((lhs.to_owned() + rhs).to_string(), store),
+            _ => (String::new(), store),
         },
-        _ => String::new(),
+        _ => (String::new(), store),
     }
 }
 

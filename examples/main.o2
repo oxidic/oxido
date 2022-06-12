@@ -1,11 +1,15 @@
-let a = "Hello " + "world!";
+let a = "Hello ";
 
-print(a);
-
-a = "Hi mom!";
-
-print(a);
-
-let b = 5 * 10;
+let b = a + "world!";
 
 print(b);
+
+let a = "Hi mom!";
+
+print(a);
+
+let d = 5 * 10;
+
+let d = d + 4;
+
+print(d);
