@@ -1,0 +1,11 @@
+let a = "Hello " + "world!";
+
+print(a);
+
+a = "Hi mom!";
+
+print(a);
+
+let b = 5 * 10;
+
+print(b);

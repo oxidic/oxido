@@ -1,6 +1,8 @@
-use std::collections::HashMap;
-
+use std::{collections::HashMap, fs};
+use std::env;
 use logos::{Lexer, Logos};
+
+mod util;
 
 #[derive(Logos, Debug, Clone, PartialEq)]
 enum Token {
@@ -12,16 +14,12 @@ enum Token {
 
     #[token("+")]
     AddOperator,
-
     #[token("-")]
     SubOperator,
-
     #[token("*")]
     MulOperator,
-
     #[token("/")]
     DivOperator,
-
     #[token("^")]
     #[token("**")]
     PowerOperator,
@@ -29,11 +27,19 @@ enum Token {
     #[token("=")]
     Assignment,
 
-    #[regex("[A-Za-z][A-Za-z0-9]+")]
+    #[regex(r"[\(\)]+")]
+    Bracket,
+
+    #[regex("[A-Za-z]+")]
     Ident,
 
+    #[regex("\"[A-Za-z0-9 !]+\"")]
+    String,
     #[regex("[0-9]+")]
     Number,
+
+    #[token("print")]
+    Print,
 
     #[error]
     #[regex(" +", logos::skip)]
@@ -41,77 +47,135 @@ enum Token {
 }
 
 fn main() {
-    let mut store: HashMap<&str, i128> = HashMap::new();
-    store = parse("let a = 5 ^ 3;", store);
-    store = parse("let d = 7 ** 2;", store);
+    let mut store: HashMap<&str, String> = util::get_hash();
+    let args: Vec<String> = env::args().collect();
 
-    println!("{:#?}", store);
+    let filename = &args[1];
+
+    let contents = fs::read_to_string(filename)
+        .expect("Something went wrong reading the file");
+
+    let lines: Vec<&str> = contents.lines().filter(|line| line != &"").collect();
+
+    for line in lines {
+        store = parse(line, store);
+    }
+        
+    println!("DEBUG: {:?}", store);
 }
 
-fn parse<'a>(line: &'a str, mut store: HashMap<&'a str, i128>) -> HashMap<&'a str, i128> {
-    let lex = Token::lexer(line);
+fn parse<'a>(line: &'a str, mut store: HashMap<&'a str, String>) -> HashMap<&'a str, String> {
+    let mut lex = Token::lexer(line);
 
     match lex.clone().next().unwrap() {
         Token::Let => store = parse_assignment(lex, store),
-        _ => {}
+        Token::Print => store = parse_print(lex, store),
+        _ => {
+            lex.next();
+            let idnt = lex.slice();
+            if store.get(idnt).unwrap() != "" {
+                lex.next();
+
+                lex.next();
+                store.insert(idnt, lex.slice().to_string().replace('"', ""));
+            }
+        }
     }
 
     store
 }
 
-fn parse_assignment<'a>(mut lex: Lexer<'a, Token>, mut store: HashMap<&'a str, i128>) -> HashMap<&'a str, i128> {
-    // let operator
+fn parse_assignment<'a>(mut lex: Lexer<'a, Token>, mut store: HashMap<&'a str, String>) -> HashMap<&'a str, String> {
+    // TOKEN: LET
     lex.next();
 
-    // i identifier
+    // TOKEN: IDENT
     lex.next();
     let ident = lex.slice();
 
-    // = operator
+    // TOKEN: =
     lex.next();
 
-    // v value
-    let value: i128;
+    // TOKEN: TEXT
+    let value: String;
 
     if lex.clone().count() > 2 {
         value = parse_expression(lex);
     } else {
         match lex.next().unwrap() {
             Token::Number => value = lex.slice().parse().unwrap(),
-            _ => value = 0,
+            Token::String => value = lex.slice().parse().unwrap(),
+            _ => value = String::new(),
         }
     }
 
-    store.insert(ident, value);
+    store.insert(ident, value.replace('"', ""));
 
     store
 }
 
-fn parse_expression(mut lex: Lexer<Token>) -> i128 {
-    lex.next();
-    let lhs: i128 = lex.slice().parse().unwrap();
+fn parse_expression(mut lex: Lexer<Token>) -> String {
+    let lhs_type = lex.next().unwrap();
+    let lhs = lex.slice();
     let op = lex.next().unwrap();
-    lex.next();
-    let rhs: i128 = lex.slice().parse().unwrap();
+    let rhs_type = lex.next().unwrap();
+    let rhs = lex.slice();
 
-    match op {
-        Token::AddOperator => lhs + rhs,
-        Token::SubOperator => lhs - rhs,
-        Token::MulOperator => lhs * rhs,
-        Token::DivOperator => lhs / rhs,
-        Token::PowerOperator => lhs.pow(rhs.try_into().unwrap()),
-        _ => 0,
+    if lhs_type != rhs_type {
+        panic!("TypeError: Expected types of {} and {} to be same!", lhs, rhs)
     }
+    match lhs_type {
+        Token::Number => {
+            match op {
+                Token::AddOperator => (lhs.parse::<i128>().unwrap() + rhs.parse::<i128>().unwrap()).to_string(),
+                Token::SubOperator => (lhs.parse::<i128>().unwrap() - rhs.parse::<i128>().unwrap()).to_string(),
+                Token::MulOperator => (lhs.parse::<i128>().unwrap() * rhs.parse::<i128>().unwrap()).to_string(),
+                Token::DivOperator => (lhs.parse::<i128>().unwrap() / rhs.parse::<i128>().unwrap()).to_string(),
+                Token::PowerOperator => lhs.parse::<i128>().unwrap().pow(rhs.parse::<i128>().unwrap().try_into().unwrap()).to_string(),
+                _ => String::new(),
+            }
+        },
+        Token::String => {
+            match op {
+                Token::AddOperator => (lhs.to_owned() + rhs).to_string(),
+                _ => String::new(),
+            }
+        }
+        _ => String::new(),
+    }
+}
+
+fn parse_print<'a>(mut lex: Lexer<'a, Token>, store: HashMap<&'a str, String>) -> HashMap<&'a str, String> {
+    // TOKEN: PRINT
+    lex.next();
+    // TOKEN: BRACKET
+    lex.next();
+
+    lex.next();
+    let idnt = lex.slice();
+    let value = store.get(idnt).unwrap();
+
+    println!("{}", value);
+
+    store
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::util::get_hash;
     use super::*;
 
     #[test]
     fn parse_assignment() {
-        let mut hash = HashMap::new();
-        hash.insert("a", 343);
-        assert_eq!(parse("let a = 7 ** 3;", HashMap::new()), hash)
+        let mut hash = get_hash();
+        hash.insert("a", String::from("7"));
+        assert_eq!(parse("let a = 7;", get_hash()), hash)
+    }
+
+    #[test]
+    fn parse_expression() {
+        let mut hash = get_hash();
+        hash.insert("a", String::from("343"));
+        assert_eq!(parse("let a = 7 ** 3;", get_hash()), hash)
     }
 }
