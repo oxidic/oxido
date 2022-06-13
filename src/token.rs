@@ -1,6 +1,7 @@
-use logos::Logos;
+use logos::{Logos};
+use std::fmt::{Display, Formatter, Error};
 
-#[derive(Logos, Debug, Clone, PartialEq)]
+#[derive(Logos, Debug, Clone, Copy, PartialEq)]
 pub enum Token {
     #[token("let")]
     Let,
@@ -40,4 +41,10 @@ pub enum Token {
     #[error]
     #[regex(" +", logos::skip)]
     Error,
+}
+
+impl Display for Token {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        write!(f, "{:#?}", self)
+    }
 }
