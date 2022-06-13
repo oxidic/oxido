@@ -4,12 +4,10 @@ let b = a + "world!";
 
 print(b);
 
-let a = "Hi mom!";
+a = "Hi mom!";
 
 print(a);
 
 let d = 5 * 10;
-
-let d = d + 4;
 
 print(d);
