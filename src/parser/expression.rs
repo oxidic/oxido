@@ -1,12 +1,22 @@
-use crate::{token::Token, util::get_value_from_ident};
+use crate::{token::Token, util::parse_ident, store::Store};
 use logos::Lexer;
-use std::collections::HashMap;
 
 pub fn parse_expression<'a>(
     lex: &Lexer<Token>,
-    store: HashMap<&'a str, String>,
-) -> (String, HashMap<&'a str, String>) {
-    let eval_string = get_value_from_ident(&lex.remainder().replace(";", ""), store.clone());
+    store: Store<'a>,
+) -> (String, Store<'a>) {
+
+    if lex.clone().collect::<Vec<Token>>().contains(&Token::String) {
+        let string = parse_ident(&lex.remainder().replace(";", ""), &store);
+        let array = string.split("+");
+        let mut r = String::new();
+        for s in array {
+            r += &s.trim().replace('"', "");
+        }
+        return (r, store)
+    }
+
+    let eval_string = parse_ident(&lex.remainder().replace(";", ""), &store);
 
     let r = meval::eval_str(eval_string).unwrap();
 

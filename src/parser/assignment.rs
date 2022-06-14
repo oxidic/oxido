@@ -1,18 +1,18 @@
-use crate::token::Token;
+use crate::{token::Token, util::check_data_type, store::Store};
 use logos::Lexer;
-use std::collections::HashMap;
 use super::expression::parse_expression;
 
 pub fn parse_assignment<'a>(
     mut lex: Lexer<'a, Token>,
-    mut store: HashMap<&'a str, String>,
-) -> HashMap<&'a str, String> {
+    mut store: Store<'a>,
+) -> Store<'a> {
     // TOKEN: IDENT
-    lex.next();
+    check_data_type(lex.next(), Token::Ident, &store);
+
     let ident = lex.slice();
 
     // TOKEN: =
-    lex.next();
+    check_data_type(lex.next(), Token::Assignment, &store);
 
     // TOKEN: TEXT
     let value: String;
@@ -21,13 +21,15 @@ pub fn parse_assignment<'a>(
         (value, store) = parse_expression(&lex, store);
     } else {
         match lex.next().unwrap() {
-            Token::Number => value = lex.slice().parse().unwrap(),
+            Token::Integer => value = lex.slice().parse().unwrap(),
             Token::String => value = lex.slice().parse().unwrap(),
             _ => value = String::new(),
         }
     }
 
-    store.insert(ident, value.replace('"', ""));
+    store.set_variable(ident, value.replace('"', ""));
+
+    check_data_type(lex.last(), Token::Semicolon, &store);
 
     store
 }

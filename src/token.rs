@@ -33,13 +33,15 @@ pub enum Token {
     #[regex("\"[A-Za-z0-9 !]+\"")]
     String,
     #[regex("[0-9]+")]
-    Number,
+    Integer,
 
     #[token("print")]
     Print,
 
-    #[error]
     #[regex(" +", logos::skip)]
+    NewLine,
+
+    #[error]
     Error,
 }
 

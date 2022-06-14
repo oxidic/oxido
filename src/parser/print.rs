@@ -1,11 +1,10 @@
-use crate::token::Token;
+use crate::{token::Token, store::Store};
 use logos::Lexer;
-use std::collections::HashMap;
 
 pub fn parse<'a>(
     mut lex: Lexer<'a, Token>,
-    store: HashMap<&'a str, String>,
-) -> HashMap<&'a str, String> {
+    store: Store<'a>,
+) -> Store<'a> {
     // TOKEN: PRINT
     lex.next();
     // TOKEN: BRACKET
@@ -13,7 +12,7 @@ pub fn parse<'a>(
 
     lex.next();
     let idnt = lex.slice();
-    let value = store.get(idnt).unwrap();
+    let value = store.get_variable(idnt).unwrap();
 
     println!("{}", value);
 

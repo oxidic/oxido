@@ -1,6 +1,7 @@
-let a = "Hello world!";
-let b = 5 * 10;
+let a = "Hello";
+a = a + " world!";
 
+let b = 5 * 10;
 b = 7 * b * 10;
 
 print(a);

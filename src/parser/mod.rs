@@ -1,50 +1,36 @@
-use crate::token::Token;
+use crate::{token::Token, util::check_data_type, store::Store};
 use logos::Logos;
-use std::collections::HashMap;
 
 mod declaration;
 mod assignment;
 mod print;
 mod expression;
 
-pub fn parse<'a>(line: &'a str, mut store: HashMap<&'a str, String>) -> HashMap<&'a str, String> {
+pub fn parse<'a>(line: &'a str, mut store: Store<'a>) -> Store<'a> {
     let lex = Token::lexer(line);
+    let token = lex.clone().next();
 
-    match lex.clone().next().unwrap() {
+    if token == None {
+        return store;
+    }
+
+    match token.unwrap() {
         Token::Let => store = declaration::parse_declaration(lex, store),
         Token::Print => store = print::parse(lex, store),
         _ => {
             let mut lex_clone = lex.clone();
             // TOKEN:: IDENT
-            lex_clone.next();
+            check_data_type(lex_clone.next(), Token::Ident, &store);
 
-            if store.get(lex_clone.slice()).unwrap() != "" {
+            let var = store.get_variable(lex_clone.slice());
+
+            if var != None {
                 store = assignment::parse_assignment(lex, store);
+            } else {
+                panic!("SyntaxError: unexpected token",);
             }
         }
     }
 
     store
-}
-
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::util::get_hash;
-
-    #[test]
-    fn parse_assignment() {
-        let mut hash = get_hash();
-        hash.insert("a", String::from("7"));
-        assert_eq!(parse("let a = 7;", get_hash()), hash)
-    }
-
-    #[test]
-    fn parse_expression() {
-        let mut hash = get_hash();
-        hash.insert("a", String::from("343"));
-        assert_eq!(parse("let a = 7 ** 3;", get_hash()), hash)
-    }
 }

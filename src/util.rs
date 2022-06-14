@@ -1,19 +1,35 @@
-use std::collections::HashMap;
+use crate::{store::Store, token::Token};
+use colored::Colorize;
 
-pub fn get_hash<K, V>() -> HashMap<K, V> {
-    HashMap::new()
+pub fn check_data_type(i: Option<Token>, v: Token, store: &Store) {
+    if i.unwrap() != v {
+        let syntax_error = "SyntaxError:".red().bold();
+        println!(
+            "{} Expected {} found {} instead!\nLine: {}",
+            syntax_error,
+            v.to_string().cyan().bold(),
+            i.unwrap().to_string().cyan().bold(),
+            store.line_number().to_string().underline()
+        );
+        std::process::exit(1);
+    }
 }
 
-pub fn get_value_from_ident(x: &String, store: HashMap<&str, String>) -> String {
+pub fn parse_ident(x: &String, store: &Store) -> String {
     if x.chars()
         .map(|f| f.is_alphabetic())
         .collect::<Vec<bool>>()
         .contains(&false)
     {
+        let mut flag = false;
         x.chars()
             .map(|f| {
-                if f.is_alphabetic() {
-                    store.get(&*f.to_string()).unwrap().to_string()
+                if f == '"' {
+                    flag = !flag;
+                    f.to_string()
+                }
+                else if f.is_alphabetic() && flag == false {
+                    store.get_variable(&*f.to_string()).unwrap().to_string()
                 } else {
                     f.to_string()
                 }
