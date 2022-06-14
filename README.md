@@ -1,6 +1,6 @@
 # Oxido
 
-Oxido is a dynamic interpreted programming language basing most of it's syntax on Rust. Convectionally, the files may end with the `o` extension, however Oxido ignores the extension.
+Oxido is a dynamic interpreted programming language basing most of its syntax on Rust. Convectionally, the files may end with the `o` extension, however Oxido ignores the extension.
 
 ## Syntax
 
