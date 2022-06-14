@@ -1,8 +1,9 @@
 let a = "Hello";
 a = a + " world!";
 
-let b = 5 * 10;
-b = 7 * b * 10;
+let b = 5;
+b = b * 10;
 
 print(a);
-print(b);
+
+if b == 50 print(b);

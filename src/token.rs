@@ -6,6 +6,9 @@ pub enum Token {
     #[token("let")]
     Let,
 
+    #[token("if")]
+    If,
+
     #[token(";")]
     Semicolon,
 
@@ -23,9 +26,14 @@ pub enum Token {
 
     #[token("=")]
     Assignment,
+    #[token("==")]
+    Equality,
 
     #[regex(r"[\(\)]+")]
     Bracket,
+
+    #[regex(r"[\{\}]+")]
+    CurlyBraces,
 
     #[regex("[A-Za-z]+")]
     Ident,

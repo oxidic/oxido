@@ -19,7 +19,7 @@ pub fn parse_ident(x: &String, store: &Store) -> String {
     if x.chars()
         .map(|f| f.is_alphabetic())
         .collect::<Vec<bool>>()
-        .contains(&false)
+        .contains(&true)
     {
         let mut flag = false;
         x.chars()
