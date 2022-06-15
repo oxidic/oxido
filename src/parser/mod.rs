@@ -1,15 +1,15 @@
-use crate::{token::Token, util::check_data_type, store::Store};
-use logos::{Logos, Lexer};
+use crate::{store::Store, token::Token, util::check_data_type};
+use logos::{Lexer, Logos};
 
-mod declaration;
 mod assignment;
-mod print;
+mod declaration;
 mod expression;
 mod if_statement;
+mod print;
 
 pub fn parse<'a>(line: &'a str, store: Store<'a>) -> Store<'a> {
     let lex = Token::lexer(line);
-    
+
     parse_with_lex(lex, store)
 }
 
@@ -17,6 +17,16 @@ pub fn parse_with_lex<'a>(lex: Lexer<'a, Token>, mut store: Store<'a>) -> Store<
     let token = lex.clone().next();
 
     if token == None {
+        return store;
+    }
+
+    if token.unwrap() == Token::CurlyBraceClose {
+        store.set_scope(true);
+
+        return store;
+    }
+
+    if store.get_scope() == false {
         return store;
     }
 

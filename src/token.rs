@@ -32,8 +32,11 @@ pub enum Token {
     #[regex(r"[\(\)]+")]
     Bracket,
 
-    #[regex(r"[\{\}]+")]
-    CurlyBraces,
+    #[token("{")]
+    CurlyBraceOpen,
+
+    #[token("}")]
+    CurlyBraceClose,
 
     #[regex("[A-Za-z]+")]
     Ident,

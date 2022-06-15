@@ -44,7 +44,7 @@ pub fn parse_ident(x: &String, store: &Store) -> String {
                     f.to_string()
                 }
             })
-            .collect()
+            .collect::<String>()
     } else {
         x.to_string()
     }
