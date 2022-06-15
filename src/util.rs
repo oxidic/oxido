@@ -1,16 +1,26 @@
 use crate::{store::Store, token::Token};
 use colored::Colorize;
 
+pub fn error(i: Option<Token>, v: Token, store: &Store) -> String {
+    let syntax_error = "SyntaxError:".red().bold();
+    format!(
+       "--> {}
+|{}. {}
+|{} Expected {} found {} instead!
+|Exiting due to previous error
+       ",
+        store.file_name(),
+        store.line_number().to_string().blue(),
+        store.line_text().underline(),
+        syntax_error,
+        v.to_string().cyan().bold(),
+        i.unwrap().to_string().cyan().bold(),
+    )
+}
+
 pub fn check_data_type(i: Option<Token>, v: Token, store: &Store) {
     if i.unwrap() != v {
-        let syntax_error = "SyntaxError:".red().bold();
-        println!(
-            "{} Expected {} found {} instead!\nLine: {}",
-            syntax_error,
-            v.to_string().cyan().bold(),
-            i.unwrap().to_string().cyan().bold(),
-            store.line_number().to_string().underline()
-        );
+        println!("{}", error(i, v, store));
         std::process::exit(1);
     }
 }

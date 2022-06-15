@@ -8,7 +8,6 @@ mod token;
 mod util;
 
 fn main() {
-    let mut store: Store = Store::new();
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 {
@@ -20,6 +19,7 @@ fn main() {
     let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
 
     let lines: Vec<&str> = contents.lines().collect();
+    let mut store: Store = Store::new(filename.to_string());
 
     for line in lines {
         store.increment_line(line.to_string());
