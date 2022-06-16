@@ -1,6 +1,6 @@
 # Oxido
 
-Oxido is a dynamic interpreted programming language basing most of its syntax on Rust. Convectionally, the files may end with the `o` extension, however Oxido ignores the extension.
+Oxido is a dynamic interpreted programming language basing most of its syntax on Rust. Conventionally, the files may end with the `o` extension, however Oxido ignores the extension.
 
 ## Syntax
 
@@ -35,7 +35,7 @@ a = 5 * 5;
 
 ### Printing
 
-The `print` keyword can be used to print variables, expressions and strings to stdout, the value must be inside two parenthesis.
+The `print` keyword can be used to print variables, expressions and strings to stdout, the value must be inside two parentheses.
 
 ```ox
 print(a);
