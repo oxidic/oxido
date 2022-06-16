@@ -6,12 +6,12 @@ pub struct Store<'a> {
     line_number: i128,
     line_text: String,
     file_name: String,
-    scope: bool,
+    scope: i128,
 }
 
 impl<'a> Store<'a> {
     pub fn new(file_name: String) -> Self {
-        Store { variables: HashMap::new(), line_number: 0, line_text: String::new(), file_name, scope: true }
+        Store { variables: HashMap::new(), line_number: 0, line_text: String::new(), file_name, scope: 0 }
     }
 
     pub fn line_text(&self) -> String {
@@ -22,13 +22,15 @@ impl<'a> Store<'a> {
         self.file_name.clone()
     }
 
-    pub fn set_scope(&mut self, v: bool) -> bool {
-        self.scope = v;
-
-        v
+    pub fn increment_scope(&mut self) {
+        self.scope += 1;
     }
 
-    pub fn get_scope(&self) -> bool {
+    pub fn decrement_scope(&mut self) {
+        self.scope -= 1;
+    }
+
+    pub fn get_scope(&self) -> i128 {
         self.scope
     }
 

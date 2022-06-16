@@ -21,12 +21,15 @@ pub fn parse_with_lex<'a>(lex: Lexer<'a, Token>, mut store: Store<'a>) -> Store<
     }
 
     if token.unwrap() == Token::CurlyBraceClose {
-        store.set_scope(true);
+        store.decrement_scope();
 
         return store;
     }
 
-    if store.get_scope() == false {
+    if store.get_scope() > 0 {
+        if store.line_text().contains("{") {
+            store.increment_scope();
+        }
         return store;
     }
 
