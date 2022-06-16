@@ -1,4 +1,4 @@
-use crate::{token::Token, store::Store};
+use crate::{token::Token, store::Store, parser::expression::parse_expression};
 use logos::Lexer;
 
 pub fn parse<'a>(
@@ -10,11 +10,9 @@ pub fn parse<'a>(
     // TOKEN: BRACKET
     lex.next();
 
-    lex.next();
-    let idnt = lex.slice();
-    let value = store.get_variable(idnt).unwrap();
+    let (r, store) = parse_expression(&mut lex, store);
 
-    println!("{}", value);
+    println!("{:?}", r);
 
     store
 }

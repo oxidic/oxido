@@ -18,7 +18,7 @@ pub fn parse_assignment<'a>(
     let value: String;
 
     if lex.clone().count() > 2 {
-        (value, store) = parse_expression(&lex, store);
+        (value, store) = parse_expression(&mut lex, store);
     } else {
         match lex.next().unwrap() {
             Token::Integer => value = lex.slice().parse().unwrap(),

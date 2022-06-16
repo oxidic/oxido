@@ -6,7 +6,7 @@ if b == 50 {
     a = a + " world!";
 
     if a == "Hello world!" {
-        print(a);
+        print(5 * 10);
     }
-    print(b);
+    print(a);
 }

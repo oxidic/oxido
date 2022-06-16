@@ -28,7 +28,7 @@ pub enum Token {
     Assignment,
     #[token("==")]
     Equality,
-
+    
     #[regex(r"[\(\)]+")]
     Bracket,
 
