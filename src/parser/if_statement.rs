@@ -1,13 +1,13 @@
 use crate::{
     store::Store,
     token::Token,
-    util::{check_data_type, parse_ident},
+    util::{check_syntax, parse_ident},
 };
 use logos::Lexer;
 
 pub fn parse_if_statement<'a>(mut lex: Lexer<'a, Token>, mut store: Store<'a>) -> Store<'a> {
     // TOKEN: if
-    check_data_type(lex.next(), Token::If, &store);
+    check_syntax(lex.next(), Token::If, &store);
 
     lex.next();
     let lhs = parse_ident(&lex.slice().to_string(), &store).replace("\"", "");
@@ -24,7 +24,9 @@ pub fn parse_if_statement<'a>(mut lex: Lexer<'a, Token>, mut store: Store<'a>) -
         _ => {}
     }
 
-    check_data_type(lex.next(), Token::CurlyBraceOpen, &store);
+    store.bracket_stack.push(String::from("if"));
+
+    check_syntax(lex.next(), Token::CurlyBraceOpen, &store);
 
     store
 }

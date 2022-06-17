@@ -1,12 +1,10 @@
-let b = 5;
-b = b * 10;
+let b = 1;
 
-if b == 50 {
-    let a = "Hello";
-    a = a + " world!";
-
-    if a == "Hello world!" {
-        print(5 * 10);
+loop {
+    b = b + 1;
+    
+    if b == 5 {
+        let a = "Hello world!";
+        print(a);
     }
-    print(a);
 }

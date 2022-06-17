@@ -1,5 +1,5 @@
 use logos::Lexer;
-use crate::{token::Token, util::check_data_type, store::Store};
+use crate::{token::Token, util::check_syntax, store::Store};
 use super::assignment::parse_assignment;
 
 pub fn parse_declaration<'a>(
@@ -9,7 +9,7 @@ pub fn parse_declaration<'a>(
     // TOKEN: LET
     let token = lex.next();
 
-    check_data_type(token, Token::Let, &store);
+    check_syntax(token, Token::Let, &store);
 
     parse_assignment(lex, store)
 }

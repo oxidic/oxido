@@ -1,4 +1,4 @@
-use crate::{token::Token, util::check_data_type, store::Store};
+use crate::{token::Token, util::check_syntax, store::Store};
 use logos::Lexer;
 use super::expression::parse_expression;
 
@@ -7,12 +7,12 @@ pub fn parse_assignment<'a>(
     mut store: Store<'a>,
 ) -> Store<'a> {
     // TOKEN: IDENT
-    check_data_type(lex.next(), Token::Ident, &store);
+    check_syntax(lex.next(), Token::Ident, &store);
 
     let ident = lex.slice();
 
     // TOKEN: =
-    check_data_type(lex.next(), Token::Assignment, &store);
+    check_syntax(lex.next(), Token::Assignment, &store);
 
     // TOKEN: TEXT
     let value: String;
@@ -29,7 +29,7 @@ pub fn parse_assignment<'a>(
 
     store.set_variable(ident, value.replace('"', ""));
 
-    check_data_type(lex.last(), Token::Semicolon, &store);
+    check_syntax(lex.last(), Token::Semicolon, &store);
 
     store
 }

@@ -1,4 +1,7 @@
-use std::{collections::HashMap, fmt::{Display, Formatter, Error}};
+use std::{
+    collections::HashMap,
+    fmt::{Display, Error, Formatter},
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Store<'a> {
@@ -7,11 +10,23 @@ pub struct Store<'a> {
     line_text: String,
     file_name: String,
     scope: i128,
+    r#loop: i128,
+    pub loop_stack: Vec<String>,
+    pub bracket_stack: Vec<String>,
 }
 
 impl<'a> Store<'a> {
     pub fn new(file_name: String) -> Self {
-        Store { variables: HashMap::new(), line_number: 0, line_text: String::new(), file_name, scope: 0 }
+        Store {
+            variables: HashMap::new(),
+            line_number: 0,
+            line_text: String::new(),
+            file_name,
+            scope: 0,
+            r#loop: 0,
+            loop_stack: vec![],
+            bracket_stack: vec![],
+        }
     }
 
     pub fn line_text(&self) -> String {
@@ -32,6 +47,18 @@ impl<'a> Store<'a> {
 
     pub fn get_scope(&self) -> i128 {
         self.scope
+    }
+
+    pub fn increment_loop(&mut self) {
+        self.r#loop += 1;
+    }
+
+    pub fn decrement_loop(&mut self) {
+        self.r#loop -= 1;
+    }
+
+    pub fn get_loop(&self) -> i128 {
+        self.r#loop
     }
 
     pub fn line_number(&self) -> i128 {

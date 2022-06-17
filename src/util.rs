@@ -18,7 +18,7 @@ pub fn error(i: Option<Token>, v: Token, store: &Store) -> String {
     )
 }
 
-pub fn check_data_type(i: Option<Token>, v: Token, store: &Store) {
+pub fn check_syntax(i: Option<Token>, v: Token, store: &Store) {
     if i.unwrap() != v {
         println!("{}", error(i, v, store));
         std::process::exit(1);

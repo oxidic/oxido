@@ -12,7 +12,7 @@ pub fn parse<'a>(
 
     let (r, store) = parse_expression(&mut lex, store);
 
-    println!("{:?}", r);
+    println!("{}", r);
 
     store
 }
