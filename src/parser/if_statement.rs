@@ -5,7 +5,7 @@ use crate::{
 };
 use logos::Lexer;
 
-pub fn parse_if_statement<'a>(mut lex: Lexer<'a, Token>, mut store: Store<'a>) -> Store<'a> {
+pub fn parse_if_statement(mut lex: Lexer<Token>, mut store: Store) -> Store {
     // TOKEN: if
     check_syntax(lex.next(), Token::If, &store);
 
@@ -18,7 +18,7 @@ pub fn parse_if_statement<'a>(mut lex: Lexer<'a, Token>, mut store: Store<'a>) -
     match op {
         Token::Equality => {
             if lhs != rhs {
-                store.increment_scope();
+                store.scope += 1;
             }
         }
         _ => {}

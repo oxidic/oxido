@@ -1,10 +1,12 @@
-let b = 1;
+let b = 0;
 
 loop {
     b = b + 1;
-    
+
     if b == 5 {
-        let a = "Hello world!";
-        print(a);
+        print("Hi mom!");
+        break;
     }
+
+    print(b);
 }

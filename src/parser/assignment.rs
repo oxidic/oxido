@@ -2,10 +2,10 @@ use crate::{token::Token, util::check_syntax, store::Store};
 use logos::Lexer;
 use super::expression::parse_expression;
 
-pub fn parse_assignment<'a>(
-    mut lex: Lexer<'a, Token>,
-    mut store: Store<'a>,
-) -> Store<'a> {
+pub fn parse_assignment(
+    mut lex: Lexer<Token>,
+    mut store: Store,
+) -> Store {
     // TOKEN: IDENT
     check_syntax(lex.next(), Token::Ident, &store);
 
@@ -27,9 +27,9 @@ pub fn parse_assignment<'a>(
         }
     }
 
-    store.set_variable(ident, value.replace('"', ""));
+    store.set_variable(ident.to_string(), value.replace('"', ""));
 
     check_syntax(lex.last(), Token::Semicolon, &store);
-
+    
     store
 }

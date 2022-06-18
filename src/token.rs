@@ -52,6 +52,9 @@ pub enum Token {
     #[token("print")]
     Print,
 
+    #[token("break")]
+    Break,
+
     #[regex(" +", logos::skip)]
     NewLine,
 

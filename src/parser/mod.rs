@@ -1,15 +1,16 @@
 use crate::{store::Store, token::Token, util::check_syntax};
-use logos::{Logos};
+use logos::Logos;
 
 mod assignment;
 mod declaration;
 mod expression;
 mod if_statement;
 mod r#loop;
+mod r#break;
 mod print;
 
-pub fn parse<'a>(line: &'a str, mut store: Store<'a>) -> Store<'a> {
-    let lex = Token::lexer(line);
+pub fn parse(line: String, mut store: Store) -> Store {
+    let lex = Token::lexer(&line);
 
     let token = lex.clone().next();
 
@@ -20,31 +21,34 @@ pub fn parse<'a>(line: &'a str, mut store: Store<'a>) -> Store<'a> {
 
     if token.unwrap() == Token::CurlyBraceClose {
         let token = store.bracket_stack.last().unwrap();
-        println!("{}", token);
         if token == "if" {
-            store.decrement_scope();
+            store.scope -= 1;
+            if store.r#loop > 0 {
+                store.loop_stack.push(store.clone().line_text);
+            }
         } else if token == "loop" {
-            store.decrement_loop();
+            store.r#loop -= 1;
+            store.is_looping = true;
         }
         store.bracket_stack.pop();
         return store;
     }
 
-    if store.get_scope() > 0 || store.get_loop() > 0 {
-        if store.line_text().contains("{") {
-            if store.line_text().contains("if") {
-                store.increment_scope();
+    if store.r#loop > 0 {
+        store.loop_stack.push(store.clone().line_text);
+    }
+
+    if store.scope > 0 || store.r#loop > 0 {
+        if store.clone().line_text.contains("{") {
+            if store.clone().line_text.contains("if") {
+                store.scope += 1;
                 store.bracket_stack.push(String::from("if"));
-            } else if store.line_text().contains("loop") {
-                store.increment_loop();
+            } else if store.clone().line_text.contains("loop") {
+                store.r#loop += 1;
                 store.bracket_stack.push(String::from("loop"));
             }
         }
         return store;
-    }
-
-    if store.get_loop() > 0 {
-        store.loop_stack.push(store.line_text());
     }
 
     match token.unwrap() {
@@ -52,6 +56,7 @@ pub fn parse<'a>(line: &'a str, mut store: Store<'a>) -> Store<'a> {
         Token::Print => store = print::parse(lex, store),
         Token::If => store = if_statement::parse_if_statement(lex, store),
         Token::Loop => store = r#loop::parse_loop(lex, store),
+        Token::Break => store = r#break::parse_break(lex, store),
         _ => {
             let mut lex_clone = lex.clone();
             // TOKEN:: IDENT

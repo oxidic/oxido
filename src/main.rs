@@ -18,12 +18,22 @@ fn main() {
 
     let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
 
-    let lines: Vec<&str> = contents.lines().collect();
-    let mut store: Store = Store::new(filename.to_string());
+    let mut store: Store = Store::new(filename.to_string(), contents.lines().map(|f| f.to_string()).collect());
 
-    for line in lines {
-        store.increment_line(line.to_string());
-        store = parser::parse(line, store);
+    loop {
+        if store.current_line == store.total_lines && !store.is_looping {
+            break;
+        }
+        if store.is_looping {
+            if store.loop_line == store.loop_stack.len() {
+                store.loop_line = 0;
+            }
+            store = parser::parse(store.loop_stack.get(store.loop_line).unwrap().to_string(), store.clone());
+            store.loop_line += 1;
+            continue;
+        }
+        store.increment_line(store.lines.get(0).unwrap().to_string());
+        store = parser::parse(store.lines.remove(0).to_string(), store);
     }
 
     if args.contains(&String::from("-D")) {

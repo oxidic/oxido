@@ -1,7 +1,7 @@
 use crate::{store::Store, token::Token, util::parse_ident};
 use logos::Lexer;
 
-pub fn parse_expression<'a>(lex: &mut Lexer<Token>, store: Store<'a>) -> (String, Store<'a>) {
+pub fn parse_expression(lex: &mut Lexer<Token>, store: Store) -> (String, Store) {
     let puntuators = vec![Token::CurlyBraceOpen, Token::CurlyBraceClose, Token::Semicolon, Token::Bracket];
 
     let clone = lex

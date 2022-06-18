@@ -9,9 +9,9 @@ pub fn error(i: Option<Token>, v: Token, store: &Store) -> String {
 |{} Expected {} found {} instead!
 |Exiting due to previous error
        ",
-        store.file_name(),
-        store.line_number().to_string().blue(),
-        store.line_text().underline(),
+        store.file_name,
+        store.current_line.to_string().blue(),
+        store.line_text.underline(),
         syntax_error,
         v.to_string().cyan().bold(),
         i.unwrap().to_string().cyan().bold(),
