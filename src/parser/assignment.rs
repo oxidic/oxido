@@ -1,11 +1,8 @@
-use crate::{token::Token, util::check_syntax, store::Store};
-use logos::Lexer;
 use super::expression::parse_expression;
+use crate::{store::Store, token::Token, util::check_syntax};
+use logos::Lexer;
 
-pub fn parse_assignment(
-    mut lex: Lexer<Token>,
-    mut store: Store,
-) -> Store {
+pub fn parse_assignment(mut lex: Lexer<Token>, mut store: Store) -> Store {
     // TOKEN: IDENT
     check_syntax(lex.next(), Token::Ident, &store);
 
@@ -23,6 +20,7 @@ pub fn parse_assignment(
         match lex.next().unwrap() {
             Token::Integer => value = lex.slice().parse().unwrap(),
             Token::String => value = lex.slice().parse().unwrap(),
+            Token::Bool => value = lex.slice().parse().unwrap(),
             _ => value = String::new(),
         }
     }
@@ -30,6 +28,6 @@ pub fn parse_assignment(
     store.set_variable(ident.to_string(), value.replace('"', ""));
 
     check_syntax(lex.last(), Token::Semicolon, &store);
-    
+
     store
 }

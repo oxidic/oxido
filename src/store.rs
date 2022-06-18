@@ -46,7 +46,7 @@ impl Store {
         self.variables.insert(ident, value)
     }
 
-    pub fn get_variable(&self, ident: & str) -> Option<&String> {
+    pub fn get_variable(&self, ident: &str) -> Option<&String> {
         self.variables.get(ident)
     }
 }

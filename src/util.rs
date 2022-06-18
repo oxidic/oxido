@@ -4,7 +4,7 @@ use colored::Colorize;
 pub fn error(i: Option<Token>, v: Token, store: &Store) -> String {
     let syntax_error = "SyntaxError:".red().bold();
     format!(
-       "--> {}
+        "--> {}
 |{}. {}
 |{} Expected {} found {} instead!
 |Exiting due to previous error
@@ -37,8 +37,8 @@ pub fn parse_ident(x: &String, store: &Store) -> String {
                 if f == '"' {
                     flag = !flag;
                     f.to_string()
-                }
-                else if f.is_alphabetic() && flag == false {
+                } else if f.is_alphabetic() && flag == false {
+                    println!("{}", f);
                     store.get_variable(&*f.to_string()).unwrap().to_string()
                 } else {
                     f.to_string()

@@ -1,12 +1,16 @@
-let b = 0;
+let c = 0;
+let b = true;
+let s = "Hi mom!";
 
 loop {
-    b = b + 1;
+    c = c + 1;
 
-    if b == 5 {
-        print("Hi mom!");
+    if c == 5 {
+        print(s);
         break;
     }
 
-    print(b);
+    print(c);
 }
+
+print(b);

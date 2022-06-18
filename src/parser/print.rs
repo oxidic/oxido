@@ -1,10 +1,7 @@
-use crate::{token::Token, store::Store, parser::expression::parse_expression};
+use crate::{parser::expression::parse_expression, store::Store, token::Token};
 use logos::Lexer;
 
-pub fn parse(
-    mut lex: Lexer<Token>,
-    store: Store,
-) -> Store {
+pub fn parse(mut lex: Lexer<Token>, store: Store) -> Store {
     // TOKEN: PRINT
     lex.next();
     // TOKEN: BRACKET

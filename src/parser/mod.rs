@@ -2,11 +2,11 @@ use crate::{store::Store, token::Token, util::check_syntax};
 use logos::Logos;
 
 mod assignment;
+mod r#break;
 mod declaration;
 mod expression;
 mod if_statement;
 mod r#loop;
-mod r#break;
 mod print;
 
 pub fn parse(line: String, mut store: Store) -> Store {

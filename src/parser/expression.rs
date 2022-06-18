@@ -2,7 +2,13 @@ use crate::{store::Store, token::Token, util::parse_ident};
 use logos::Lexer;
 
 pub fn parse_expression(lex: &mut Lexer<Token>, store: Store) -> (String, Store) {
-    let puntuators = vec![Token::CurlyBraceOpen, Token::CurlyBraceClose, Token::Semicolon, Token::Bracket];
+    let puntuators = vec![
+        Token::CurlyBraceOpen,
+        Token::CurlyBraceClose,
+        Token::Semicolon,
+        Token::ParenthesisOpen,
+        Token::ParenthesisClose,
+    ];
 
     let clone = lex
         .clone()
@@ -13,6 +19,10 @@ pub fn parse_expression(lex: &mut Lexer<Token>, store: Store) -> (String, Store)
         lex.next();
         let r = parse_ident(&lex.slice().to_string(), &store);
         return (r, store);
+    } else if clone.len() == 1 && clone.contains(&Token::Bool) {
+        lex.next();
+        let r = lex.slice().to_string();
+        (r, store)
     } else if clone.contains(&Token::String) {
         let string = parse_ident(
             &lex.remainder()

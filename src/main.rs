@@ -18,7 +18,10 @@ fn main() {
 
     let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
 
-    let mut store: Store = Store::new(filename.to_string(), contents.lines().map(|f| f.to_string()).collect());
+    let mut store: Store = Store::new(
+        filename.to_string(),
+        contents.lines().map(|f| f.to_string()).collect(),
+    );
 
     loop {
         if store.current_line == store.total_lines && !store.is_looping {
@@ -28,7 +31,10 @@ fn main() {
             if store.loop_line == store.loop_stack.len() {
                 store.loop_line = 0;
             }
-            store = parser::parse(store.loop_stack.get(store.loop_line).unwrap().to_string(), store.clone());
+            store = parser::parse(
+                store.loop_stack.get(store.loop_line).unwrap().to_string(),
+                store.clone(),
+            );
             store.loop_line += 1;
             continue;
         }

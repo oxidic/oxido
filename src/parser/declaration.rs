@@ -1,11 +1,8 @@
-use logos::Lexer;
-use crate::{token::Token, util::check_syntax, store::Store};
 use super::assignment::parse_assignment;
+use crate::{store::Store, token::Token, util::check_syntax};
+use logos::Lexer;
 
-pub fn parse_declaration(
-    mut lex: Lexer<Token>,
-    store: Store,
-) -> Store {
+pub fn parse_declaration(mut lex: Lexer<Token>, store: Store) -> Store {
     // TOKEN: LET
     let token = lex.next();
 

@@ -1,14 +1,12 @@
-use logos::{Logos};
-use std::fmt::{Display, Formatter, Error};
+use logos::Logos;
+use std::fmt::{Display, Error, Formatter};
 
 #[derive(Logos, Debug, Clone, Copy, PartialEq)]
 pub enum Token {
     #[token("let")]
     Let,
-
     #[token("if")]
     If,
-
     #[token("loop")]
     Loop,
 
@@ -26,38 +24,36 @@ pub enum Token {
     #[token("^")]
     #[token("**")]
     PowerOperator,
-
     #[token("=")]
     Assignment,
     #[token("==")]
     Equality,
-    
-    #[regex(r"[\(\)]+")]
-    Bracket,
 
+    #[token("(")]
+    ParenthesisOpen,
+    #[token(")")]
+    ParenthesisClose,
     #[token("{")]
     CurlyBraceOpen,
-
     #[token("}")]
     CurlyBraceClose,
 
     #[regex("[A-Za-z]+")]
     Ident,
-
     #[regex("\"[A-Za-z0-9 !]+\"")]
     String,
     #[regex("[0-9]+")]
     Integer,
+    #[regex("true|false")]
+    Bool,
 
     #[token("print")]
     Print,
-
     #[token("break")]
     Break,
 
     #[regex(" +", logos::skip)]
     NewLine,
-
     #[error]
     Error,
 }
