@@ -4,15 +4,17 @@ Oxido is a dynamic interpreted programming language basing most of its syntax on
 
 ## Installation
 
-You can use `curl` or `wget` to download the script and run it, you may have to manually remove the oxido binary if its in the working directory with `rm -rf oxido`.
+Oxido has an [installer](https://github.com/oxidite/oxup). Install the latest release and run
 
 ```bash
-curl https://raw.githubusercontent.com/megatank58/oxup/main/install.sh | sh
+oxup install
 ```
 
 ## Uninstallation
 
-Oxido ships as a single binary, which is placed at `/usr/bin/oxido`, removing this will also remove the compiler.
+Oxido ships as a single binary, which is placed at `/usr/bin/oxido`.
+
+It can be removed manually, or by using oxup:
 
 ```bash
 oxup uninstall
