@@ -15,7 +15,7 @@ curl https://raw.githubusercontent.com/megatank58/oxup/main/install.sh | sh
 Oxido ships as a single binary, which is placed at `/usr/bin/oxido`, removing this will also remove the compiler.
 
 ```bash
-sudo rm -rf /usr/bin/oxido
+oxup uninstall
 ```
 
 ## Syntax
