@@ -4,7 +4,7 @@ Oxido is a dynamic interpreted programming language basing most of its syntax on
 
 ## Installation
 
-Oxido has an [installer](https://github.com/oxidite/oxup). Install the latest release and run
+[Oxup](https://github.com/oxidite/oxup), the official installer can be used to install the latest release from GitHub.
 
 ```bash
 oxup install
@@ -12,9 +12,7 @@ oxup install
 
 ## Uninstallation
 
-Oxido ships as a single binary, which is placed at `/usr/bin/oxido`.
-
-It can be removed manually, or by using oxup:
+You can use `oxup` to remove the current installation.
 
 ```bash
 oxup uninstall
