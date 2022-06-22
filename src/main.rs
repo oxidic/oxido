@@ -14,12 +14,16 @@ fn main() {
         return println!("CLI: file to run was not provided!");
     }
 
-    let filename = &args[1];
+    let mut filename: String = (&args[1]).to_string();
 
-    let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
+    if !filename.ends_with(".o") {
+        filename = String::from(filename.to_owned() + "/main.o");
+    }
+
+    let contents = fs::read_to_string(filename.clone()).expect("Something went wrong reading the file");
 
     let mut store: Store = Store::new(
-        filename.to_string(),
+        filename,
         contents.lines().map(|f| f.to_string()).collect(),
     );
 
