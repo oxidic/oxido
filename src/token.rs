@@ -28,6 +28,12 @@ pub enum Token {
     Assignment,
     #[token("==")]
     Equality,
+    #[token("!=")]
+    NotEquality,
+    #[token(">")]
+    GreaterThan,
+    #[token("<")]
+    LesserThan,
 
     #[token("(")]
     ParenthesisOpen,

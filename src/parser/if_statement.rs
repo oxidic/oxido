@@ -20,7 +20,22 @@ pub fn parse_if_statement(mut lex: Lexer<Token>, mut store: Store) -> Store {
             if lhs != rhs {
                 store.scope += 1;
             }
-        }
+        },
+        Token::NotEquality => {
+            if lhs == rhs {
+                store.scope += 1;
+            }
+        },
+        Token::GreaterThan => {
+            if lhs < rhs {
+                store.scope += 1;
+            }
+        },
+        Token::LesserThan => {
+            if lhs > rhs {
+                store.scope += 1;
+            }
+        },
         _ => {}
     }
 
