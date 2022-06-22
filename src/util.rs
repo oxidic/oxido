@@ -32,14 +32,13 @@ pub fn parse_ident(x: &String, store: &Store) -> String {
         .contains(&true)
     {
         let mut flag = false;
-        x.chars()
+        x.trim().split(" ")
             .map(|f| {
-                if f == '"' {
+                if f.starts_with("\"") {
                     flag = !flag;
                     f.to_string()
-                } else if f.is_alphabetic() && flag == false {
-                    println!("{}", f);
-                    store.get_variable(&*f.to_string()).unwrap().to_string()
+                } else if !f.chars().map(|f| f.is_alphabetic()).collect::<Vec<bool>>().contains(&false) && flag == false {
+                    store.get_variable(&f).unwrap().to_string()
                 } else {
                     f.to_string()
                 }
