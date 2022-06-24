@@ -2,13 +2,14 @@ let number = 0;
 let bool = true;
 let string = "Hi mom!";
 
-if number > 5 {
+if number < 5 {
     print(number);
+
+    if bool == true {
+        print(bool);
+    }
 }
 
-if bool == true {
-    print(bool);
-}
 
 if string != "Hello world!" {
     print(string);

@@ -66,8 +66,6 @@ pub fn parse(line: String, mut store: Store) -> Store {
 
             if var != None {
                 store = assignment::parse_assignment(lex, store);
-            } else {
-                panic!("SyntaxError: unexpected token",);
             }
         }
     }
