@@ -1,0 +1,10 @@
+let number = 0;
+number = 5;
+let bool = true;
+bool = false;
+let string = "Hello world!";
+string = "Hi mom!";
+
+print(number);
+print(bool);
+print(string);

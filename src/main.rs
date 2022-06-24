@@ -16,6 +16,10 @@ fn main() {
 
     let filename = &args[1];
 
+    run(filename);
+}
+
+fn run(filename: &str) {
     let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
 
     let mut store: Store = Store::new(
@@ -41,8 +45,26 @@ fn main() {
         store.increment_line(store.lines.get(0).unwrap().to_string());
         store = parser::parse(store.lines.remove(0).to_string(), store);
     }
+}
 
-    if args.contains(&String::from("-D")) {
-        println!("DEBUG: {}", store);
+#[cfg(test)]
+mod tests {
+    use crate::run;
+
+    #[test]
+    fn declaration() {
+        run("tests/declaration.o");
+    }
+    #[test]
+    fn reassignment() {
+        run("tests/reassignment.o");
+    }
+    #[test]
+    fn if_statement() {
+        run("tests/if_statement.o");
+    }
+    #[test]
+    fn loop_statement() {
+        run("tests/loop_statement.o");
     }
 }
