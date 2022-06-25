@@ -102,3 +102,13 @@ fn message[text] {
 
 message[text];
 ```
+
+### Exiting
+
+The `exit` keyword can be used to exit the program with the specified exit code
+
+```ox
+let code = 1;
+
+exit(code);
+```

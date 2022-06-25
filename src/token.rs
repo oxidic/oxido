@@ -63,6 +63,8 @@ pub enum Token {
 
     #[token("print")]
     Print,
+    #[token("exit")]
+    Exit,
     #[token("break")]
     Break,
 
