@@ -9,13 +9,9 @@ pub enum Token {
     If,
     #[token("loop")]
     Loop,
-    #[token("fn")]
-    Function,
 
     #[token(";")]
     Semicolon,
-    #[token(",")]
-    Comma,
 
     #[token("+")]
     AddOperator,
@@ -47,10 +43,6 @@ pub enum Token {
     CurlyBraceOpen,
     #[token("}")]
     CurlyBraceClose,
-    #[token("[")]
-    SquareBraceOpen,
-    #[token("]")]
-    SquareBraceClose,
 
     #[regex("[A-Za-z]+")]
     Ident,
@@ -63,6 +55,8 @@ pub enum Token {
 
     #[token("print")]
     Print,
+    #[token("exit")]
+    Exit,
     #[token("break")]
     Break,
 
