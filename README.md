@@ -89,3 +89,16 @@ loop {
 }
 ```
 
+### Functions
+
+Funcitons store the given conditions until they are called. They are declared with the `fn` keyword, followed by a space and the name of the function, the name must be a valid identifier, followed by args, seperated by commas in `[]` and the conditions in `{}`.
+
+```ox
+let text = "Hi mom!";
+
+fn message[text] {
+    print(text);
+}
+
+message[text];
+```

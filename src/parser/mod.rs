@@ -25,6 +25,17 @@ pub fn parse(line: String, mut store: Store) -> Store {
     }
 
     /*
+    IF LOOP is still capturing input, push it
+     */
+    let functions = store.clone().states.functions;
+    if functions.capturing {
+        let mut function = store.functions.get(&functions.current).unwrap().clone();
+        function.lines.push(store.lines.text.clone());
+        store.functions.insert(functions.current, function);
+        return store;
+    }
+
+    /*
     IF a CURLYBRACE is closed then we determine whether it was an IF CURLYBRACE or LOOP CURLYBRACE
 
     IF: Subtract 1 from scopes._if as IF has ended
@@ -45,17 +56,6 @@ pub fn parse(line: String, mut store: Store) -> Store {
             store.states.functions.capturing = false;
         }
         store.states.stack.pop();
-        return store;
-    }
-
-    /*
-    IF LOOP is still capturing input, push it
-     */
-    let functions = store.clone().states.functions;
-    if functions.capturing {
-        let mut function = store.functions.get(&functions.current).unwrap().clone();
-        function.lines.push(store.lines.text.clone());
-        store.functions.insert(functions.current, function);
         return store;
     }
 
