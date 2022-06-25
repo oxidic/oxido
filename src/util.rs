@@ -10,8 +10,8 @@ pub fn error(i: Option<Token>, v: Token, store: &Store) -> String {
 |Exiting due to previous error
        ",
         store.file_name,
-        store.current_line.to_string().blue(),
-        store.line_text.underline(),
+        store.lines.at.to_string().blue(),
+        store.lines.text.underline(),
         syntax_error,
         v.to_string().cyan().bold(),
         i.unwrap().to_string().cyan().bold(),
@@ -47,7 +47,7 @@ pub fn parse_ident(x: &String, store: &Store) -> String {
                     && f != "true"
                     && f != "false"
                 {
-                    store.get_variable(&f).unwrap().to_string()
+                    store.variables.get(f).unwrap().to_string()
                 } else {
                     f.to_string()
                 }

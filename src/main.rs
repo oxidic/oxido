@@ -28,22 +28,49 @@ fn run(filename: &str) {
     );
 
     loop {
-        if store.current_line == store.total_lines && !store.is_looping {
-            break;
-        }
-        if store.is_looping {
-            if store.loop_line == store.loop_stack.len() {
-                store.loop_line = 0;
+        if store.states.functions.running {
+            let mut function = store
+                .functions
+                .get(&store.states.functions.current)
+                .unwrap()
+                .clone();
+            let variables = store.variables.clone();
+            for (i, v) in store.states.functions.args.iter() {
+                store.variables.insert(i.to_string(), v.to_string());
             }
-            store = parser::parse(
-                store.loop_stack.get(store.loop_line).unwrap().to_string(),
-                store.clone(),
-            );
-            store.loop_line += 1;
+            loop {
+                if function.lines.len() == 0 {
+                    break;
+                }
+                store = parser::parse(function.lines.remove(0).to_string(), store);
+            }
+            store.states.functions.running = false;
+            store.states.functions.current = String::new();
+            store.variables = variables;
             continue;
         }
-        store.increment_line(store.lines.get(0).unwrap().to_string());
-        store = parser::parse(store.lines.remove(0).to_string(), store);
+        if store.lines.at == store.lines.total && !store.states.loops.looping {
+            break;
+        }
+        if store.states.loops.looping {
+            if store.states.loops.loop_line == store.states.loops.stack.len().try_into().unwrap() {
+                store.states.loops.loop_line = 0;
+            }
+            store = parser::parse(
+                store
+                    .states
+                    .loops
+                    .stack
+                    .get(store.states.loops.loop_line as usize)
+                    .unwrap()
+                    .to_string(),
+                store.clone(),
+            );
+            store.states.loops.loop_line += 1;
+            continue;
+        }
+        store.increment_line(store.lines.lines.get(0).unwrap().to_string());
+        store = parser::parse(store.lines.lines.remove(0).to_string(), store);
     }
 }
 
@@ -66,5 +93,9 @@ mod tests {
     #[test]
     fn loop_statement() {
         run("tests/loop_statement.o");
+    }
+    #[test]
+    fn function() {
+        run("tests/function.o");
     }
 }

@@ -25,7 +25,9 @@ pub fn parse_assignment(mut lex: Lexer<Token>, mut store: Store) -> Store {
         }
     }
 
-    store.set_variable(ident.to_string(), value.replace('"', ""));
+    store
+        .variables
+        .insert(ident.to_string(), value.replace('"', ""));
 
     check_syntax(lex.last(), Token::Semicolon, &store);
 

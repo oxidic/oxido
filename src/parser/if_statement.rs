@@ -18,28 +18,28 @@ pub fn parse_if_statement(mut lex: Lexer<Token>, mut store: Store) -> Store {
     match op {
         Token::Equality => {
             if lhs != rhs {
-                store.scope += 1;
+                store.scopes._if += 1;
             }
-        },
+        }
         Token::NotEquality => {
             if lhs == rhs {
-                store.scope += 1;
+                store.scopes._if += 1;
             }
-        },
+        }
         Token::GreaterThan => {
             if lhs < rhs {
-                store.scope += 1;
+                store.scopes._if += 1;
             }
-        },
+        }
         Token::LesserThan => {
             if lhs > rhs {
-                store.scope += 1;
+                store.scopes._if += 1;
             }
-        },
+        }
         _ => {}
     }
 
-    store.bracket_stack.push(String::from("if"));
+    store.states.stack.push(String::from("if"));
 
     check_syntax(lex.next(), Token::CurlyBraceOpen, &store);
 
