@@ -3,11 +3,6 @@ use std::{
     fmt::{Display, Error, Formatter},
 };
 
-/// # Scopes
-/// - `_loop` Stores whether the loop is capturing input in number
-/// - `_if` Stores if scope, if more than 0, skip, else run
-/// - `_function` Stores which function is capturing input
-/// - `_looping` Stores whether the loop has started running and not capturing input anymore
 #[derive(Debug, Clone, PartialEq)]
 pub struct ScopeManager {
     pub _loop: i128,
@@ -52,17 +47,7 @@ pub struct FunctionState {
 
 /// # Store
 ///
-/// The Store acts as the _Storage_ for the interpreter
-///
-/// - `at` The line at which the interpreter is running
-/// - `text` The at text of line at which the interpreter is running
-/// - `file_name` The name of the file
-/// - `total` The number of lines in file
-/// - `lines` A vector of all lines
-/// - `scopes` The scopes object storing various values
-/// - `loop_line` The line at which the loop is running at
-/// - `stack` Stores the lines of loop
-/// - `bracket_stack` Stores the scopes of IF LOOP and FUNCTION
+/// The Store acts as the Storage for the interpreter
 #[derive(Debug, Clone, PartialEq)]
 pub struct Store {
     pub file_name: String,
