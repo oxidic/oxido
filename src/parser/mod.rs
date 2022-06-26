@@ -13,6 +13,7 @@ mod function;
 mod if_statement;
 mod r#loop;
 mod print;
+mod exit;
 
 pub fn parse(line: String, mut store: Store) -> Store {
     let lex = Token::lexer(&line);
@@ -85,6 +86,7 @@ pub fn parse(line: String, mut store: Store) -> Store {
     match token.unwrap() {
         Token::Let => store = declaration::parse_declaration(lex, store),
         Token::Print => store = print::parse(lex, store),
+        Token::Exit => exit::parse(lex, store),
         Token::If => store = if_statement::parse_if_statement(lex, store),
         Token::Loop => store = r#loop::parse_loop(lex, store),
         Token::Function => store = function::parse_function(lex, store),
