@@ -18,6 +18,22 @@ You can use `oxup` to remove the current installation.
 oxup uninstall
 ```
 
+## Usage
+
+You can run an Oxido file using the `oxido` command. The files may end with the `o` extension, however Oxido ignores the extension, and runs the file as-is.
+
+```bash
+oxido <filename>
+```
+
+For example:
+
+```bash
+oxido ./main.o
+```
+
+Conventionally, base Oxido files are named `main.o`.
+
 ## Syntax
 
 ### Data types
