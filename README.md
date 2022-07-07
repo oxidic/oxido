@@ -1,5 +1,21 @@
 # Oxido
 
+**Table of Contents**:
+
+- [Oxido](#oxido)
+  - [Installation](#installation)
+  - [Uninstallation](#uninstallation)
+  - [Usage](#usage)
+  - [Syntax](#syntax)
+    - [Data types](#data-types)
+    - [Variables](#variables)
+    - [Reassignments](#reassignments)
+    - [Printing](#printing)
+    - [If statements](#if-statements)
+    - [Loop statements](#loop-statements)
+    - [Functions](#functions)
+    - [Exiting](#exiting)
+
 Oxido is a dynamic interpreted programming language basing most of its syntax on Rust. Conventionally, the files may end with the `o` extension, however Oxido ignores the extension.
 
 ## Installation
@@ -17,6 +33,22 @@ You can use `oxup` to remove the current installation.
 ```bash
 oxup uninstall
 ```
+
+## Usage
+
+You can run an Oxido file using the `oxido` command. The files may end with the `o` extension, however Oxido ignores the extension, and runs the file as-is.
+
+```bash
+oxido <filename>
+```
+
+For example:
+
+```bash
+oxido ./main.o
+```
+
+Conventionally, base Oxido files are named `main.o`.
 
 ## Syntax
 
