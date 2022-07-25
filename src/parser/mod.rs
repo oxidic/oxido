@@ -1,5 +1,5 @@
 use crate::{
-    errors::error_keys::check_syntax,
+    errors::{error_keys::check_syntax, Error},
     lexer::lexer,
     parser::{
         expression::{BinaryOperation, Boolean, Expression, Identifier, Number, Text},
@@ -19,6 +19,8 @@ pub struct Parser {
     pub lines: Vec<String>,
     pub line: String,
     pub variables: HashMap<String, Data>,
+    pub stacks: Vec<String>,
+    pub can_run: i64,
 }
 
 impl Parser {
@@ -28,6 +30,8 @@ impl Parser {
             lines,
             line: String::new(),
             variables: HashMap::new(),
+            stacks: vec![],
+            can_run: 0,
         }
     }
 
@@ -42,13 +46,36 @@ impl Parser {
             let token = lexer.clone().next();
 
             match token {
-                Some(Token::Let) => self.parse_declaration(lexer),
-                Some(Token::Print) => self.parse_print(lexer),
+                Some(Token::RCurly) => {
+                    self.stacks.pop();
+                    self.can_run += 1;
+                }
+                Some(t) => {
+                    if self.can_run < 0 {
+                        continue;
+                    };
+                    match t {
+                        Token::Let => self.parse_declaration(lexer),
+                        Token::Print => self.parse_print(lexer),
+                        Token::If => self.parse_if(lexer),
+                        _ => check_syntax(&self.file(), &line, Token::Let, token.unwrap()),
+                    }
+                }
                 None => {}
-                Some(_) => {
-                    check_syntax(&self.file(), &line, Token::Let, token.unwrap());
+            }
+        }
+    }
+
+    pub fn parse_if(&mut self, mut lexer: Lexer<Token>) {
+        check_syntax(&self.file(), &self.line, Token::If, lexer.next().unwrap());
+        match self.parse_expression(lexer) {
+            Data::Boolean(run) => {
+                self.stacks.push(String::from("If"));
+                if !run {
+                    self.can_run -= 1;
                 }
             }
+            t => Error::throw(&self.file(), &self.line, 3, &format!("Unexpected data type {t:?}"), true),
         }
     }
 
@@ -63,7 +90,13 @@ impl Parser {
             Data::Text(str) => println!("{str}"),
             Data::Number(n) => println!("{n}"),
             Data::Boolean(b) => println!("{b}"),
-            _ => {}
+            t => Error::throw(
+                &self.file(),
+                &self.line,
+                3,
+                &format!("Unexpected data type {t:?}"),
+                true,
+            ),
         }
     }
 
@@ -96,7 +129,7 @@ impl Parser {
             Expression::Number(n) => Data::Number(n.value),
             Expression::Identifier(var) => self.variables.get(&var.name).unwrap().clone(),
             Expression::Text(str) => Data::Text(str.value),
-            _ => Data::Number(0), // placeholder
+            Expression::Boolean(b) => Data::Boolean(b.value),
         };
         let operator = op.operator;
         let rhs = match *op.rhs {
@@ -104,9 +137,8 @@ impl Parser {
             Expression::Number(n) => Data::Number(n.value),
             Expression::Identifier(var) => self.variables.get(&var.name).unwrap().clone(),
             Expression::Text(str) => Data::Text(str.value),
-            _ => Data::Placeholder,
+            Expression::Boolean(b) => Data::Boolean(b.value),
         };
-
         match operator {
             Token::Addition => match lhs {
                 Data::Text(str) => match rhs {
@@ -143,6 +175,36 @@ impl Parser {
             Token::Power => match lhs {
                 Data::Number(n) => match rhs {
                     Data::Number(m) => Data::Number(n.pow(m as u32)),
+                    _ => Data::Placeholder,
+                },
+                _ => Data::Placeholder,
+            },
+            Token::IsEqual => match lhs {
+                Data::Text(str) => match rhs {
+                    Data::Text(s) => Data::Boolean(str == s),
+                    _ => Data::Placeholder,
+                },
+                Data::Number(n) => match rhs {
+                    Data::Number(m) => Data::Boolean(n == m),
+                    _ => Data::Placeholder,
+                },
+                Data::Boolean(b) => match rhs {
+                    Data::Boolean(d) => Data::Boolean(b == d),
+                    _ => Data::Placeholder,
+                },
+                _ => Data::Placeholder,
+            },
+            Token::IsNotEqual => match lhs {
+                Data::Text(str) => match rhs {
+                    Data::Text(s) => Data::Boolean(str != s),
+                    _ => Data::Placeholder,
+                },
+                Data::Number(n) => match rhs {
+                    Data::Number(m) => Data::Boolean(n != m),
+                    _ => Data::Placeholder,
+                },
+                Data::Boolean(b) => match rhs {
+                    Data::Boolean(d) => Data::Boolean(b != d),
                     _ => Data::Placeholder,
                 },
                 _ => Data::Placeholder,
@@ -238,7 +300,9 @@ impl Parser {
             Token::Subtraction => 2,
             Token::Multiplication => 3,
             Token::Division => 4,
-            _ => 5,
+            Token::Power => 5,
+            Token::IsEqual => 6,
+            _ => 0,
         }
     }
 }

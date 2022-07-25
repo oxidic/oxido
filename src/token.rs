@@ -68,6 +68,10 @@ pub enum Token {
     LParen,
     #[token(")")]
     RParen,
+    #[token("{")]
+    LCurly,
+    #[token("}")]
+    RCurly,
 
     /// Keyword: print
     #[token("print")]

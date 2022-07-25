@@ -1,7 +1,10 @@
-let counter = 2 + 5 * 3;
+let counter = 2 + 5 * 3; 
 let bool = true;
 let string = ("Hi" + " ") + "mom!";
 
-print(string);
-print(counter);
-print(bool);
+if counter == 17 {
+    print(bool);
+    if true != (counter == 16) {
+        print(string);
+    }
+}
