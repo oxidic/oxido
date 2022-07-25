@@ -2,15 +2,8 @@ let counter = 0 + 5;
 let bool = true;
 let string = "Hi mom!";
 
-loop {
-    counter = counter + 1;
+print(string);
 
-    if counter == 5 {
-        print(string);
-        break;
-    }
-
-    print(counter);
-}
+print(counter);
 
 print(bool);

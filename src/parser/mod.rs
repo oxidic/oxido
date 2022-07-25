@@ -45,7 +45,9 @@ impl Parser {
 
             match token {
                 Some(Token::Let) => self.parse_declaration(lexer),
-                None | Some(_) => {
+                Some(Token::Print) => self.parse_print(lexer),
+                None => {}
+                Some(_) => {
                     Error::throw(
                         &self.file_name(),
                         &line,
@@ -55,6 +57,16 @@ impl Parser {
                     );
                 }
             }
+        }
+    }
+
+    pub fn parse_print(&mut self, mut lexer: Lexer<Token>) {
+        lexer.next();
+        match self.parse_expression(lexer) {
+            Data::Text(str) => println!("{str}"),
+            Data::Number(n) => println!("{n}"),
+            Data::Boolean(b) => println!("{b}"),
+            _ => {},
         }
     }
 
@@ -69,7 +81,6 @@ impl Parser {
         let value = self.parse_expression(lexer);
 
         self.variables.insert(identifier, value);
-
     }
 
     pub fn parse_binary_operation(&self, op: BinaryOperation) -> Data {
@@ -168,15 +179,13 @@ impl Parser {
             }
             Token::String => {
                 expr = Expression::Text(Text {
-                    value: lexer.slice().to_string(),
+                    value: lexer.slice().to_string().replace('"', ""),
                 })
             }
             Token::LParen => {
-                lexer.next();
                 (expr, lexer) = self.pratt_parser(lexer, 0);
             }
             Token::Subtraction => {
-                lexer.next();
                 expr = Expression::Number(Number {
                     value: -lexer.slice().parse::<i128>().unwrap(),
                 })
@@ -191,7 +200,7 @@ impl Parser {
         loop {
             let token = lexer.next();
 
-            if token == None {
+            if token == None || token == Some(Token::RParen) {
                 break;
             }
 

@@ -4,9 +4,9 @@ use std::fs;
 use crate::errors::Error;
 
 mod errors;
-mod token;
-mod parser;
 mod lexer;
+mod parser;
+mod token;
 
 #[derive(clap_parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -35,6 +35,9 @@ fn main() {
         }
     };
 
-    parser::Parser::new(args.input, contents.lines().map(|f| f.trim().to_string()).collect()).parse();
-
+    parser::Parser::new(
+        args.input,
+        contents.lines().map(|f| f.trim().to_string()).collect(),
+    )
+    .parse();
 }
