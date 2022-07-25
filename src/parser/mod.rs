@@ -1,19 +1,14 @@
 use crate::{
-    errors::{
-        error_keys::{syntax_error_message, SYNTAX_ERROR_CODE},
-        Error,
+    errors::error_keys::check_syntax,
+    lexer::lexer,
+    parser::{
+        expression::{BinaryOperation, Boolean, Expression, Identifier, Number, Text},
+        variable::Data,
     },
-    lexer::{self},
-    parser::expression::{Boolean, Expression, Text},
     token::Token,
 };
 use logos::Lexer;
 use std::collections::HashMap;
-
-use self::{
-    expression::{BinaryOperation, Identifier, Number},
-    variable::Data,
-};
 
 mod expression;
 mod variable;
@@ -22,6 +17,7 @@ mod variable;
 pub struct Parser {
     pub file: String,
     pub lines: Vec<String>,
+    pub line: String,
     pub variables: HashMap<String, Data>,
 }
 
@@ -30,17 +26,19 @@ impl Parser {
         Self {
             file,
             lines,
+            line: String::new(),
             variables: HashMap::new(),
         }
     }
 
-    pub fn file_name(&self) -> String {
+    pub fn file(&self) -> String {
         self.file.clone()
     }
 
     pub fn parse(&mut self) {
         for line in self.lines.clone() {
-            let lexer = lexer::lexer(&line);
+            self.line = line.clone();
+            let lexer = lexer(&line);
             let token = lexer.clone().next();
 
             match token {
@@ -48,35 +46,44 @@ impl Parser {
                 Some(Token::Print) => self.parse_print(lexer),
                 None => {}
                 Some(_) => {
-                    Error::throw(
-                        &self.file_name(),
-                        &line,
-                        SYNTAX_ERROR_CODE,
-                        &syntax_error_message("Let"),
-                        true,
-                    );
+                    check_syntax(&self.file(), &line, Token::Let, token.unwrap());
                 }
             }
         }
     }
 
     pub fn parse_print(&mut self, mut lexer: Lexer<Token>) {
-        lexer.next();
+        check_syntax(
+            &self.file(),
+            &self.line,
+            Token::Print,
+            lexer.next().unwrap(),
+        );
         match self.parse_expression(lexer) {
             Data::Text(str) => println!("{str}"),
             Data::Number(n) => println!("{n}"),
             Data::Boolean(b) => println!("{b}"),
-            _ => {},
+            _ => {}
         }
     }
 
     pub fn parse_declaration(&mut self, mut lexer: Lexer<Token>) {
-        lexer.next();
-        lexer.next();
+        check_syntax(&self.file(), &self.line, Token::Let, lexer.next().unwrap());
+        check_syntax(
+            &self.file(),
+            &self.line,
+            Token::Ident,
+            lexer.next().unwrap(),
+        );
 
         let identifier = lexer.slice().to_string();
 
-        lexer.next();
+        check_syntax(
+            &self.file(),
+            &self.line,
+            Token::Equal,
+            lexer.next().unwrap(),
+        );
 
         let value = self.parse_expression(lexer);
 

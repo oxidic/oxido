@@ -1,9 +1,7 @@
-let counter = 0 + 5;
+let counter = 2 + 5 * 3;
 let bool = true;
-let string = "Hi mom!";
+let string = ("Hi" + " ") + "mom!";
 
 print(string);
-
 print(counter);
-
 print(bool);
