@@ -1,4 +1,4 @@
-let counter = 0;
+let counter = 0 + 5;
 let bool = true;
 let string = "Hi mom!";
 

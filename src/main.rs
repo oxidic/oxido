@@ -1,101 +1,40 @@
-use crate::store::Store;
-use std::env;
+use clap::Parser as clap_parser;
 use std::fs;
 
-mod parser;
-mod store;
+use crate::errors::Error;
+
+mod errors;
 mod token;
-mod util;
+mod parser;
+mod lexer;
+
+#[derive(clap_parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    /// Whether to output debug information
+    #[clap(short, long, value_parser)]
+    debug: bool,
+
+    #[clap()]
+    input: String,
+}
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-
-    if args.len() < 2 {
-        return println!("CLI: file to run was not provided!");
-    }
-
-    let filename = &args[1];
-
-    run(filename);
-}
-
-fn run(filename: &str) {
-    let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
-
-    let mut store: Store = Store::new(
-        filename.to_string(),
-        contents.lines().map(|f| f.to_string()).collect(),
-    );
-
-    loop {
-        if store.states.functions.running {
-            let mut function = store
-                .functions
-                .get(&store.states.functions.current)
-                .unwrap()
-                .clone();
-            let variables = store.variables.clone();
-            for (i, v) in store.states.functions.args.iter() {
-                store.variables.insert(i.to_string(), v.to_string());
-            }
-            loop {
-                if function.lines.len() == 0 {
-                    break;
-                }
-                store = parser::parse(function.lines.remove(0).to_string(), store);
-            }
-            store.states.functions.running = false;
-            store.states.functions.current = String::new();
-            store.variables = variables;
-            continue;
-        }
-        if store.lines.at == store.lines.total && !store.states.loops.looping {
-            break;
-        }
-        if store.states.loops.looping {
-            if store.states.loops.loop_line == store.states.loops.stack.len().try_into().unwrap() {
-                store.states.loops.loop_line = 0;
-            }
-            store = parser::parse(
-                store
-                    .states
-                    .loops
-                    .stack
-                    .get(store.states.loops.loop_line as usize)
-                    .unwrap()
-                    .to_string(),
-                store.clone(),
+    let args = Args::parse();
+    let contents = match fs::read_to_string(&args.input) {
+        Ok(text) => text,
+        Err(_) => {
+            Error::throw(
+                &args.input,
+                &args.input,
+                0,
+                &format!("File '{}' was not found", args.input),
+                false,
             );
-            store.states.loops.loop_line += 1;
-            continue;
+            String::new()
         }
-        store.increment_line(store.lines.lines.get(0).unwrap().to_string());
-        store = parser::parse(store.lines.lines.remove(0).to_string(), store);
-    }
-}
+    };
 
-#[cfg(test)]
-mod tests {
-    use crate::run;
+    parser::Parser::new(args.input, contents.lines().map(|f| f.trim().to_string()).collect()).parse();
 
-    #[test]
-    fn declaration() {
-        run("tests/declaration.o");
-    }
-    #[test]
-    fn reassignment() {
-        run("tests/reassignment.o");
-    }
-    #[test]
-    fn if_statement() {
-        run("tests/if_statement.o");
-    }
-    #[test]
-    fn loop_statement() {
-        run("tests/loop_statement.o");
-    }
-    #[test]
-    fn function() {
-        run("tests/function.o");
-    }
 }

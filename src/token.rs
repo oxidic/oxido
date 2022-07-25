@@ -3,54 +3,57 @@ use std::fmt::{Display, Error, Formatter};
 
 #[derive(Logos, Debug, Clone, Copy, PartialEq)]
 pub enum Token {
+    /// Keyword: let
     #[token("let")]
     Let,
+    /// Keyword: if
     #[token("if")]
     If,
+    /// Keyword: loop
     #[token("loop")]
     Loop,
+    /// Keyword: fn
     #[token("fn")]
     Function,
 
-    #[token(";")]
+    /// Keyword: ;
+    #[token(";", logos::skip)]
     Semicolon,
+    /// Keyword: ,
     #[token(",")]
     Comma,
 
+    /// Keyword: +
     #[token("+")]
-    AddOperator,
+    Addition,
+    /// Keyword: -
     #[token("-")]
-    SubOperator,
+    Subtraction,
+    /// Keyword: *
     #[token("*")]
-    MulOperator,
+    Multiplication,
+    /// Keyword: /
     #[token("/")]
-    DivOperator,
+    Division,
+    /// Keyword: ^ OR **
     #[token("^")]
     #[token("**")]
-    PowerOperator,
+    Power,
+    /// Keyword: =
     #[token("=")]
-    Assignment,
+    Equal,
+    /// Keyword: ==
     #[token("==")]
-    Equality,
+    IsEqual,
+    /// Keyword: !=
     #[token("!=")]
-    NotEquality,
+    IsNotEqual,
+    /// Keyword: >
     #[token(">")]
-    GreaterThan,
+    IsGreater,
+    /// Keyword: <
     #[token("<")]
-    LesserThan,
-
-    #[token("(")]
-    ParenthesisOpen,
-    #[token(")")]
-    ParenthesisClose,
-    #[token("{")]
-    CurlyBraceOpen,
-    #[token("}")]
-    CurlyBraceClose,
-    #[token("[")]
-    SquareBraceOpen,
-    #[token("]")]
-    SquareBraceClose,
+    IsLesser,
 
     #[regex("[A-Za-z]+")]
     Ident,
@@ -61,10 +64,18 @@ pub enum Token {
     #[regex("true|false")]
     Bool,
 
+    #[token("(")]
+    LParen,
+    #[token(")")]
+    RParen,
+
+    /// Keyword: print
     #[token("print")]
     Print,
+    /// Keyword: exit
     #[token("exit")]
     Exit,
+    /// Keyword: break
     #[token("break")]
     Break,
 
@@ -76,6 +87,6 @@ pub enum Token {
 
 impl Display for Token {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "{:#?}", self)
+        write!(f, "{:?}", self)
     }
 }

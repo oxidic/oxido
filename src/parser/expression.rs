@@ -1,53 +1,37 @@
-use crate::{store::Store, token::Token, util::parse_ident};
-use logos::Lexer;
+use crate::token::Token;
 
-pub fn parse_expression(lex: &mut Lexer<Token>, store: Store) -> (String, Store) {
-    let puntuators = vec![
-        Token::CurlyBraceOpen,
-        Token::CurlyBraceClose,
-        Token::Semicolon,
-        Token::ParenthesisOpen,
-        Token::ParenthesisClose,
-    ];
+#[derive(Clone, Debug)]
+pub struct BinaryOperation {
+    pub lhs: Box<Expression>,
+    pub operator: Token,
+    pub rhs: Box<Expression>
+}
 
-    let clone = lex
-        .clone()
-        .filter(|f| !puntuators.contains(f))
-        .collect::<Vec<Token>>();
+#[derive(Clone, Debug)]
+pub struct Number {
+    pub value: i128
+}
 
-    if clone.len() == 1 && clone.contains(&Token::Ident) {
-        lex.next();
-        let r = parse_ident(&lex.slice().to_string(), &store);
-        return (r, store);
-    } else if clone.len() == 1 && clone.contains(&Token::Bool) {
-        lex.next();
-        let r = lex.slice().to_string();
-        (r, store)
-    } else if clone.contains(&Token::String) {
-        let string = parse_ident(
-            &lex.remainder()
-                .replace("(", "")
-                .replace(")", "")
-                .replace(";", ""),
-            &store,
-        );
-        let array = string.split("+");
-        let mut r = String::new();
-        for s in array {
-            r += &s.trim().replace('"', "");
-        }
-        return (r, store);
-    } else {
-        let eval_string = parse_ident(
-            &lex.remainder()
-                .replace("(", "")
-                .replace(")", "")
-                .replace(";", ""),
-            &store,
-        );
+#[derive(Clone, Debug)]
+pub struct Identifier {
+    pub name: String
+}
 
-        let r = meval::eval_str(eval_string).unwrap();
+#[derive(Clone, Debug)]
+pub struct Boolean {
+    pub value: bool
+}
 
-        (r.to_string(), store)
-    }
+#[derive(Clone, Debug)]
+pub struct Text {
+    pub value: String
+}
+
+#[derive(Clone, Debug)]
+pub enum Expression {
+    BinaryOperation(BinaryOperation),
+    Number(Number),
+    Identifier(Identifier),
+    Boolean(Boolean),
+    Text(Text)
 }
