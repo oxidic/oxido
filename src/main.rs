@@ -1,9 +1,6 @@
 use clap::Parser as clap_parser;
 use std::fs;
 
-use crate::errors::Error;
-
-mod errors;
 mod lexer;
 mod parser;
 mod token;
@@ -23,12 +20,10 @@ fn main() {
     let args = Args::parse();
     let contents = match fs::read_to_string(&args.input) {
         Ok(text) => text,
-        Err(_) => {
-            Error::throw(
-                &args.input,
-                &args.input,
+        Err(e) => {
+            parser::Parser::new(String::new(), vec![String::new()]).throw(
                 0,
-                &format!("File '{}' was not found", args.input),
+                format!("Error while reading file {}:\n\t{e}", args.input),
                 false,
             );
             String::new()
@@ -39,5 +34,5 @@ fn main() {
         args.input,
         contents.lines().map(|f| f.trim().to_string()).collect(),
     )
-    .parse();
+    .run();
 }

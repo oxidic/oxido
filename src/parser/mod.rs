@@ -1,5 +1,4 @@
 use crate::{
-    errors::{error_keys::check_syntax, Error},
     lexer::lexer,
     parser::{
         expression::{BinaryOperation, Boolean, Expression, Identifier, Number, Text},
@@ -7,6 +6,10 @@ use crate::{
     },
     token::Token,
 };
+use codespan_reporting::diagnostic::{Diagnostic, Label};
+use codespan_reporting::files::SimpleFiles;
+use codespan_reporting::term;
+use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use logos::Lexer;
 use std::collections::HashMap;
 
@@ -20,6 +23,7 @@ pub struct Parser {
     pub line: String,
     pub variables: HashMap<String, Data>,
     pub stacks: Vec<String>,
+    pub char_sum: usize,
     pub can_run: i64,
 }
 
@@ -31,43 +35,46 @@ impl Parser {
             line: String::new(),
             variables: HashMap::new(),
             stacks: vec![],
+            char_sum: 0,
             can_run: 0,
         }
     }
 
-    pub fn file(&self) -> String {
-        self.file.clone()
-    }
-
-    pub fn parse(&mut self) {
+    pub fn run(&mut self) {
         for line in self.lines.clone() {
-            self.line = line.clone();
-            let lexer = lexer(&line);
-            let token = lexer.clone().next();
-
-            match token {
-                Some(Token::RCurly) => {
-                    self.stacks.pop();
-                    self.can_run += 1;
-                }
-                Some(t) => {
-                    if self.can_run < 0 {
-                        continue;
-                    };
-                    match t {
-                        Token::Let => self.parse_declaration(lexer),
-                        Token::Print => self.parse_print(lexer),
-                        Token::If => self.parse_if(lexer),
-                        _ => check_syntax(&self.file(), &line, Token::Let, token.unwrap()),
-                    }
-                }
-                None => {}
-            }
+            self.parse(line);
         }
     }
 
+    pub fn parse(&mut self, line: String) {
+        self.line = line.clone();
+        let lexer = lexer(&line);
+        let token = lexer.clone().next();
+
+        match token {
+            Some(Token::RCurly) => {
+                self.stacks.pop();
+                self.can_run += 1;
+            }
+            Some(t) => {
+                if self.can_run < 0 {
+                    return;
+                };
+                match t {
+                    Token::Let => self.parse_declaration(lexer),
+                    Token::Print => self.parse_print(lexer),
+                    Token::If => self.parse_if(lexer),
+                    _ => self.check(Token::Let, token.unwrap()),
+                }
+            }
+            None => {}
+        }
+
+        self.char_sum += self.line.chars().count() + 1;
+    }
+
     pub fn parse_if(&mut self, mut lexer: Lexer<Token>) {
-        check_syntax(&self.file(), &self.line, Token::If, lexer.next().unwrap());
+        self.check(Token::If, lexer.next().unwrap());
         match self.parse_expression(lexer) {
             Data::Boolean(run) => {
                 self.stacks.push(String::from("If"));
@@ -75,48 +82,27 @@ impl Parser {
                     self.can_run -= 1;
                 }
             }
-            t => Error::throw(&self.file(), &self.line, 3, &format!("Unexpected data type {t:?}"), true),
+            t => self.throw(3, format!("Unexpected data type {t:?}"), true),
         }
     }
 
     pub fn parse_print(&mut self, mut lexer: Lexer<Token>) {
-        check_syntax(
-            &self.file(),
-            &self.line,
-            Token::Print,
-            lexer.next().unwrap(),
-        );
+        self.check(Token::Print, lexer.next().unwrap());
         match self.parse_expression(lexer) {
             Data::Text(str) => println!("{str}"),
             Data::Number(n) => println!("{n}"),
             Data::Boolean(b) => println!("{b}"),
-            t => Error::throw(
-                &self.file(),
-                &self.line,
-                3,
-                &format!("Unexpected data type {t:?}"),
-                true,
-            ),
+            t => self.throw(3, format!("Unexpected data type {t:?}"), true),
         }
     }
 
     pub fn parse_declaration(&mut self, mut lexer: Lexer<Token>) {
-        check_syntax(&self.file(), &self.line, Token::Let, lexer.next().unwrap());
-        check_syntax(
-            &self.file(),
-            &self.line,
-            Token::Ident,
-            lexer.next().unwrap(),
-        );
+        self.check(Token::Let, lexer.next().unwrap());
+        self.check(Token::Ident, lexer.next().unwrap());
 
         let identifier = lexer.slice().to_string();
 
-        check_syntax(
-            &self.file(),
-            &self.line,
-            Token::Equal,
-            lexer.next().unwrap(),
-        );
+        self.check(Token::Equal, lexer.next().unwrap());
 
         let value = self.parse_expression(lexer);
 
@@ -292,6 +278,54 @@ impl Parser {
         }
 
         (expr, lexer)
+    }
+
+    pub fn build(
+        &self,
+        code: i32,
+        message: String,
+        label: bool,
+    ) -> (Diagnostic<usize>, SimpleFiles<String, String>) {
+        let mut files = SimpleFiles::new();
+        let file = self
+            .lines
+            .clone()
+            .into_iter()
+            .map(|f| f + "\n")
+            .collect::<String>();
+
+        let file_id = files.add(self.file.clone(), file);
+
+        let mut diagnostic: Diagnostic<usize> = Diagnostic::error()
+            .with_message(message)
+            .with_code("E".to_owned() + &code.to_string());
+
+        println!("{}", self.char_sum);
+
+        if label {
+            diagnostic = diagnostic.with_labels(vec![Label::primary(
+                file_id,
+                self.char_sum..self.char_sum + self.line.len(),
+            )]);
+        }
+
+        (diagnostic, files)
+    }
+
+    pub fn throw(&self, code: i32, message: String, label: bool) {
+        let (diagnostic, files) = &self.build(code, message, label);
+
+        let writer = StandardStream::stderr(ColorChoice::Always);
+        let config = codespan_reporting::term::Config::default();
+
+        term::emit(&mut writer.lock(), &config, files, diagnostic).unwrap();
+        std::process::exit(1);
+    }
+
+    pub fn check(&self, expectation: Token, reality: Token) {
+        if expectation != reality {
+            self.throw(1, format!("Expected {expectation} here"), true);
+        }
     }
 
     pub fn infix_binding_power(&self, op: Token) -> u16 {
