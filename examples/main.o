@@ -4,7 +4,7 @@ let string = ("Hi" + " ") + "mom!";
 
 if counter == 17 {
     print(bool);
-    if true != (counter == 16) {
+    if true == false {
         print(string);
     }
 }

@@ -21,10 +21,10 @@ pub struct Parser {
     pub file: String,
     pub lines: Vec<String>,
     pub line: String,
+    pub line_number: usize,
     pub variables: HashMap<String, Data>,
     pub stacks: Vec<String>,
     pub char_sum: usize,
-    pub can_run: i64,
 }
 
 impl Parser {
@@ -35,14 +35,18 @@ impl Parser {
             line: String::new(),
             variables: HashMap::new(),
             stacks: vec![],
+            line_number: 0,
             char_sum: 0,
-            can_run: 0,
         }
     }
 
     pub fn run(&mut self) {
-        for line in self.lines.clone() {
-            self.parse(line);
+        for _ in 0..self.lines.len() {
+            if self.line_number + 1 >= self.lines.len() {
+                break;
+            }
+            self.parse(self.lines.get(self.line_number).unwrap().to_string());
+            self.line_number += 1;
         }
     }
 
@@ -54,19 +58,13 @@ impl Parser {
         match token {
             Some(Token::RCurly) => {
                 self.stacks.pop();
-                self.can_run += 1;
             }
-            Some(t) => {
-                if self.can_run < 0 {
-                    return;
-                };
-                match t {
-                    Token::Let => self.parse_declaration(lexer),
-                    Token::Print => self.parse_print(lexer),
-                    Token::If => self.parse_if(lexer),
-                    _ => self.check(Token::Let, token.unwrap()),
-                }
-            }
+            Some(t) => match t {
+                Token::Let => self.parse_declaration(lexer),
+                Token::Print => self.parse_print(lexer),
+                Token::If => self.parse_if(lexer),
+                _ => self.check(Token::Let, token.unwrap()),
+            },
             None => {}
         }
 
@@ -78,8 +76,22 @@ impl Parser {
         match self.parse_expression(lexer) {
             Data::Boolean(run) => {
                 self.stacks.push(String::from("If"));
-                if !run {
-                    self.can_run -= 1;
+                let stack_len = self.stacks.len();
+                let lines = self.lines.clone();
+                for _ in self.line_number + 1..lines.len() {
+                    self.line_number += 1;
+
+                    if self.line_number + 1 >= lines.len() {
+                        break;
+                    }
+
+                    if run {
+                        self.parse(lines.get(self.line_number).unwrap().to_string());
+                    }
+
+                    if self.stacks.len() < stack_len {
+                        break;
+                    }
                 }
             }
             t => self.throw(3, format!("Unexpected data type {t:?}"), true),
