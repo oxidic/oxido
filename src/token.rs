@@ -54,6 +54,12 @@ pub enum Token {
     /// Keyword: <
     #[token("<")]
     IsLesser,
+    /// Keyword: >=
+    #[token(">=")]
+    IsGreaterEqual,
+    /// Keyword: <=
+    #[token("<=")]
+    IsLesserEqual,
 
     #[regex("[A-Za-z]+")]
     Ident,

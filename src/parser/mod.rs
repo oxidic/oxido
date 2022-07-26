@@ -207,6 +207,66 @@ impl Parser {
                 },
                 _ => Data::Placeholder,
             },
+            Token::IsGreater => match lhs {
+                Data::Text(str) => match rhs {
+                    Data::Text(s) => Data::Boolean(str > s),
+                    _ => Data::Placeholder,
+                },
+                Data::Number(n) => match rhs {
+                    Data::Number(m) => Data::Boolean(n > m),
+                    _ => Data::Placeholder,
+                },
+                Data::Boolean(b) => match rhs {
+                    Data::Boolean(d) => Data::Boolean(b & !d),
+                    _ => Data::Placeholder,
+                },
+                _ => Data::Placeholder,
+            },
+            Token::IsLesser => match lhs {
+                Data::Text(str) => match rhs {
+                    Data::Text(s) => Data::Boolean(str < s),
+                    _ => Data::Placeholder,
+                },
+                Data::Number(n) => match rhs {
+                    Data::Number(m) => Data::Boolean(n < m),
+                    _ => Data::Placeholder,
+                },
+                Data::Boolean(b) => match rhs {
+                    Data::Boolean(d) => Data::Boolean(!b & d),
+                    _ => Data::Placeholder,
+                },
+                _ => Data::Placeholder,
+            },
+            Token::IsGreaterEqual => match lhs {
+                Data::Text(str) => match rhs {
+                    Data::Text(s) => Data::Boolean(str >= s),
+                    _ => Data::Placeholder,
+                },
+                Data::Number(n) => match rhs {
+                    Data::Number(m) => Data::Boolean(n >= m),
+                    _ => Data::Placeholder,
+                },
+                Data::Boolean(b) => match rhs {
+                    Data::Boolean(d) => Data::Boolean(b >= d),
+                    _ => Data::Placeholder,
+                },
+                _ => Data::Placeholder,
+            },
+            Token::IsLesserEqual => match lhs {
+                Data::Text(str) => match rhs {
+                    Data::Text(s) => Data::Boolean(str <= s),
+                    _ => Data::Placeholder,
+                },
+                Data::Number(n) => match rhs {
+                    Data::Number(m) => Data::Boolean(n <= m),
+                    _ => Data::Placeholder,
+                },
+                Data::Boolean(b) => match rhs {
+                    Data::Boolean(d) => Data::Boolean(b <= d),
+                    _ => Data::Placeholder,
+                },
+                _ => Data::Placeholder,
+            },
             _ => Data::Placeholder,
         }
     }
