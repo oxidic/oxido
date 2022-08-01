@@ -1,5 +1,5 @@
 use crate::{
-    lexer::lexer,
+    lexer,
     parser::{
         expression::{BinaryOperation, Boolean, Expression, Identifier, Number, Text},
         variable::Data,
@@ -25,6 +25,7 @@ pub struct Parser {
     pub variables: HashMap<String, Data>,
     pub stacks: Vec<String>,
     pub char_sum: usize,
+    pub to_break: bool,
 }
 
 impl Parser {
@@ -34,87 +35,222 @@ impl Parser {
             lines,
             line: String::new(),
             variables: HashMap::new(),
-            stacks: vec![],
+            stacks: vec![String::from("main")],
             line_number: 0,
             char_sum: 0,
+            to_break: false,
         }
     }
 
-    pub fn run(&mut self) {
-        for _ in 0..self.lines.len() {
-            if self.line_number + 1 >= self.lines.len() {
+    pub fn run(mut self) -> Self {
+        loop {
+            if self.line_number + 1 > self.lines.len() {
                 break;
             }
             self.parse(self.lines.get(self.line_number).unwrap().to_string());
             self.line_number += 1;
         }
+
+        self
     }
 
-    pub fn parse(&mut self, line: String) {
+    pub fn tokenize(&mut self, line: String) -> Option<Token> {
+        lexer::lexer(&line).next()
+    }
+
+    pub fn parse(&mut self, line: String) -> Token {
         self.line = line.clone();
-        let lexer = lexer(&line);
-        let token = lexer.clone().next();
+        let lexer = lexer::lexer(&line);
+        let token = self.tokenize(self.line.clone());
 
         match token {
-            Some(Token::RCurly) => {
-                self.stacks.pop();
-            }
             Some(t) => match t {
                 Token::Let => self.parse_declaration(lexer),
-                Token::Print => self.parse_print(lexer),
+                Token::Print => self.parse_print(lexer, false),
+                Token::Println => self.parse_print(lexer, true),
+                Token::Ident => self.parse_assignment(lexer),
                 Token::If => self.parse_if(lexer),
-                _ => self.check(Token::Let, token.unwrap()),
+                Token::Loop => self.parse_loop(lexer),
+                Token::Break => self.parse_break(),
+                _ => {}
             },
             None => {}
         }
 
         self.char_sum += self.line.chars().count() + 1;
+        if token == None {
+            return Token::NewLine;
+        }
+        token.unwrap()
+    }
+
+    pub fn parse_break(&mut self) {
+        // let mut index = 0;
+
+        // for i in 0..self.stacks.len() {
+        //     if self
+        //         .stacks
+        //         .get(i)
+        //         .unwrap()
+        //         .starts_with(&String::from("Loop"))
+        //     {
+        //         index = i;
+        //     }
+        // }
+
+        // for _ in index..self.stacks.len() {
+        //     self.stacks.pop();
+        // }
+
+        self.to_break = true;
+    }
+
+    pub fn parse_loop(&mut self, mut lexer: Lexer<Token>) {
+        self.check(Token::Loop, lexer.next());
+
+        let loop_signature = "Loop".to_owned() + &self.stacks.len().to_string();
+
+        self.stacks.push(loop_signature.clone());
+
+        self.line_number += 1;
+
+        let loop_start = self.line_number;
+        let mut ignore = false;
+
+        loop {
+            if self.line_number > self.lines.len() {
+                self.line_number = loop_start;
+            }
+
+            if self.to_break {
+                ignore = true;
+                self.to_break = false;
+            }
+
+            let line = self.lines.get(self.line_number).unwrap().to_string();
+
+            if ignore {
+                let token = self.tokenize(line).unwrap();
+                if token == Token::RCurly  {
+                    if self.stacks.last().unwrap() == &loop_signature {
+                        break;
+                    } else {
+                        self.stacks.pop();
+                    }
+                }
+                self.line_number += 1;
+                continue;
+            }
+
+            let token = self.parse(line.clone());
+
+            if token == Token::RCurly && self.stacks.last().unwrap() == &loop_signature {
+                self.line_number = loop_start;
+                continue;
+            }
+
+            self.line_number += 1;
+        }
     }
 
     pub fn parse_if(&mut self, mut lexer: Lexer<Token>) {
-        self.check(Token::If, lexer.next().unwrap());
+        self.check(Token::If, lexer.next());
         match self.parse_expression(lexer) {
             Data::Boolean(run) => {
-                self.stacks.push(String::from("If"));
+                let if_signature = "If".to_string();
+
+                self.stacks.push(if_signature.clone());
+
                 let stack_len = self.stacks.len();
                 let lines = self.lines.clone();
-                for _ in self.line_number + 1..lines.len() {
-                    self.line_number += 1;
+                self.line_number += 1;
 
+                loop {
                     if self.line_number + 1 >= lines.len() {
                         break;
                     }
 
-                    if run {
-                        self.parse(lines.get(self.line_number).unwrap().to_string());
+                    let line = lines.get(self.line_number).unwrap().to_string();
+
+                    if run
+                        && self.parse(line.clone()) == Token::RCurly
+                        && self.stacks.last().unwrap() == &if_signature
+                    {
+                        self.stacks.pop();
+                    }
+
+                    if !run
+                        && self.tokenize(line) == Some(Token::RCurly)
+                        && self.stacks.last().unwrap() == &if_signature
+                    {
+                        self.stacks.pop();
                     }
 
                     if self.stacks.len() < stack_len {
                         break;
                     }
+
+                    self.line_number += 1;
                 }
             }
-            t => self.throw(3, format!("Unexpected data type {t:?}"), true),
+            t => self.throw(3, format!("unexpected data type {t:?}"), true),
         }
     }
 
-    pub fn parse_print(&mut self, mut lexer: Lexer<Token>) {
-        self.check(Token::Print, lexer.next().unwrap());
-        match self.parse_expression(lexer) {
-            Data::Text(str) => println!("{str}"),
-            Data::Number(n) => println!("{n}"),
-            Data::Boolean(b) => println!("{b}"),
-            t => self.throw(3, format!("Unexpected data type {t:?}"), true),
+    pub fn parse_print(&mut self, mut lexer: Lexer<Token>, new_line: bool) {
+        if new_line {
+            self.check(Token::Println, lexer.next());
+        } else {
+            self.check(Token::Print, lexer.next());
+        }
+
+        let mut lex = lexer.clone();
+        lex.next();
+
+        if lex.next() == Some(Token::RParen) {
+            return println!();
+        }
+
+        let data: String = match self.parse_expression(lexer) {
+            Data::Text(str) => str,
+            Data::Number(n) => format!("{n}"),
+            Data::Boolean(b) => format!("{b}"),
+            t => {
+                self.throw(3, format!("unexpected data type {t:?}"), true);
+                String::new()
+            }
+        };
+
+        if new_line {
+            println!("{data}")
+        } else {
+            print!("{data}")
         }
     }
 
     pub fn parse_declaration(&mut self, mut lexer: Lexer<Token>) {
-        self.check(Token::Let, lexer.next().unwrap());
-        self.check(Token::Ident, lexer.next().unwrap());
+        self.check(Token::Let, lexer.next());
+        self.check(Token::Ident, lexer.next());
 
         let identifier = lexer.slice().to_string();
 
-        self.check(Token::Equal, lexer.next().unwrap());
+        self.check(Token::Equal, lexer.next());
+
+        let value = self.parse_expression(lexer);
+
+        self.variables.insert(identifier, value);
+    }
+
+    pub fn parse_assignment(&mut self, mut lexer: Lexer<Token>) {
+        self.check(Token::Ident, lexer.next());
+
+        let identifier = lexer.slice().to_string();
+
+        if self.variables.get(&identifier).is_none() {
+            self.throw(4, "assignment to undeclared variable".to_string(), true)
+        }
+
+        self.check(Token::Equal, lexer.next());
 
         let value = self.parse_expression(lexer);
 
@@ -372,8 +508,6 @@ impl Parser {
             .with_message(message)
             .with_code("E".to_owned() + &code.to_string());
 
-        println!("{}", self.char_sum);
-
         if label {
             diagnostic = diagnostic.with_labels(vec![Label::primary(
                 file_id,
@@ -394,8 +528,8 @@ impl Parser {
         std::process::exit(1);
     }
 
-    pub fn check(&self, expectation: Token, reality: Token) {
-        if expectation != reality {
+    pub fn check(&self, expectation: Token, reality: Option<Token>) {
+        if expectation != reality.unwrap() {
             self.throw(1, format!("Expected {expectation} here"), true);
         }
     }
@@ -407,7 +541,7 @@ impl Parser {
             Token::Multiplication => 3,
             Token::Division => 4,
             Token::Power => 5,
-            Token::IsEqual => 6,
+            Token::IsNotEqual | Token::IsEqual => 6,
             _ => 0,
         }
     }

@@ -1,10 +1,13 @@
-let counter = 2 + 5 * 3; 
+let i = 0; 
 let bool = true;
-let string = ("Hi" + " ") + "mom!";
+let string = "Hi" + "mom!";
 
-if counter == 17 {
-    print(bool);
-    if true == false {
-        print(string);
+loop {
+    if counter == 5 {
+        break;
     }
+    counter = counter + 1;
+    println(counter);
 }
+
+println(bool)

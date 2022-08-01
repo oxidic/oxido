@@ -67,21 +67,30 @@ pub enum Token {
     String,
     #[regex("[0-9]+")]
     Integer,
+
+    /// Keyword: true|false
     #[regex("true|false")]
     Bool,
 
+    /// Keyword: (
     #[token("(")]
     LParen,
+    /// Keyword: )
     #[token(")")]
     RParen,
+    /// Keyword: {
     #[token("{")]
     LCurly,
+    /// Keyword: }
     #[token("}")]
     RCurly,
 
     /// Keyword: print
     #[token("print")]
     Print,
+    /// Keyword: println
+    #[token("println")]
+    Println,
     /// Keyword: exit
     #[token("exit")]
     Exit,
@@ -89,6 +98,8 @@ pub enum Token {
     #[token("break")]
     Break,
 
+    #[regex(r"/\*([^*]|\*[^/])+\*/", logos::skip)]
+    Comment,
     #[regex(" +", logos::skip)]
     NewLine,
     #[error]

@@ -30,9 +30,13 @@ fn main() {
         }
     };
 
-    parser::Parser::new(
+    let parser = parser::Parser::new(
         args.input,
         contents.lines().map(|f| f.trim().to_string()).collect(),
     )
     .run();
+
+    if args.debug {
+        println!("{parser:#?}");
+    }
 }
