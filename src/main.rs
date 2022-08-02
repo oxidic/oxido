@@ -18,12 +18,22 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-    let contents = match fs::read_to_string(&args.input) {
+    let filename = String::from(&args.input);
+
+    run(filename, args.debug);
+}
+
+fn run(mut file: String, debug: bool) {
+    if fs::metadata(&file).unwrap().is_dir() {
+        file = file.to_owned() + "/main.o";
+    }
+
+    let contents = match fs::read_to_string(&file) {
         Ok(text) => text,
         Err(e) => {
             parser::Parser::new(String::new(), vec![String::new()]).throw(
                 0,
-                format!("Error while reading file {}:\n\t{e}", args.input),
+                format!("Error while reading file {}:\n\t{e}", file),
                 false,
             );
             String::new()
@@ -31,12 +41,42 @@ fn main() {
     };
 
     let parser = parser::Parser::new(
-        args.input,
+        file,
         contents.lines().map(|f| f.trim().to_string()).collect(),
     )
     .run();
 
-    if args.debug {
+    if debug {
         println!("{parser:#?}");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::run;
+
+    #[test]
+    fn declaration() {
+        run("tests/declaration.o".to_string(), false)
+    }
+
+    #[test]
+    fn reassignment() {
+        run("tests/reassignment.o".to_string(), false)
+    }
+
+    #[test]
+    fn function() {
+        run("tests/function.o".to_string(), false)
+    }
+
+    #[test]
+    fn r#if() {
+        run("tests/if.o".to_string(), false)
+    }
+
+    #[test]
+    fn r#loop() {
+        run("tests/loop.o".to_string(), false)
     }
 }

@@ -1,7 +1,7 @@
 let text = "Hi mom!";
 
-fn message[text] {
+message(text) {
     print(text);
 }
 
-message[text];
+message(text);

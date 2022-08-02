@@ -12,9 +12,6 @@ pub enum Token {
     /// Keyword: loop
     #[token("loop")]
     Loop,
-    /// Keyword: fn
-    #[token("fn")]
-    Function,
 
     /// Keyword: ;
     #[token(";", logos::skip)]
@@ -63,6 +60,8 @@ pub enum Token {
 
     #[regex("[A-Za-z]+")]
     Ident,
+    #[regex("[A-Za-z]+()", priority = 2)]
+    FunctionName,
     #[regex("\"[A-Za-z0-9 !]+\"")]
     String,
     #[regex("[0-9]+")]
