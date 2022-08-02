@@ -72,6 +72,7 @@ impl Parser {
                 Token::If => self.parse_if(lexer),
                 Token::Loop => self.parse_loop(lexer),
                 Token::Break => self.parse_break(),
+                Token::Exit => self.parse_exit(lexer),
                 _ => {}
             },
             None => {}
@@ -82,6 +83,16 @@ impl Parser {
             return Token::NewLine;
         }
         token.unwrap()
+    }
+
+    pub fn parse_exit(&mut self, mut lexer: Lexer<Token>) {
+        self.check(Token::Exit, lexer.next());
+        self.check(Token::LParen, lexer.next());
+
+        match self.parse_expression(lexer) {
+            Data::Number(n) => std::process::exit(n.try_into().unwrap()),
+            t => self.throw(3, format!("unexpected data type {t:?}"), true),
+        }
     }
 
     pub fn parse_break(&mut self) {
@@ -101,7 +112,7 @@ impl Parser {
         let mut ignore = false;
 
         loop {
-            if self.line_number >= self.lines.len() {
+            if self.line_number == self.lines.len() {
                 self.line_number = loop_start;
             }
 
@@ -113,13 +124,9 @@ impl Parser {
             let line = self.lines.get(self.line_number).unwrap().to_string();
 
             if ignore {
-                let token = self.tokenize(line).unwrap();
-                if token == Token::RCurly {
-                    if self.stacks.last().unwrap() == &loop_signature {
-                        break;
-                    } else {
-                        self.stacks.pop();
-                    }
+                let token = self.tokenize(line).unwrap_or(Token::Semicolon);
+                if token == Token::RCurly && self.stacks.pop().unwrap() == loop_signature {
+                    break;
                 }
                 self.line_number += 1;
                 continue;
