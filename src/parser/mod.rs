@@ -85,23 +85,6 @@ impl Parser {
     }
 
     pub fn parse_break(&mut self) {
-        // let mut index = 0;
-
-        // for i in 0..self.stacks.len() {
-        //     if self
-        //         .stacks
-        //         .get(i)
-        //         .unwrap()
-        //         .starts_with(&String::from("Loop"))
-        //     {
-        //         index = i;
-        //     }
-        // }
-
-        // for _ in index..self.stacks.len() {
-        //     self.stacks.pop();
-        // }
-
         self.to_break = true;
     }
 
@@ -118,7 +101,7 @@ impl Parser {
         let mut ignore = false;
 
         loop {
-            if self.line_number > self.lines.len() {
+            if self.line_number >= self.lines.len() {
                 self.line_number = loop_start;
             }
 
@@ -131,7 +114,7 @@ impl Parser {
 
             if ignore {
                 let token = self.tokenize(line).unwrap();
-                if token == Token::RCurly  {
+                if token == Token::RCurly {
                     if self.stacks.last().unwrap() == &loop_signature {
                         break;
                     } else {
@@ -536,13 +519,26 @@ impl Parser {
 
     pub fn infix_binding_power(&self, op: Token) -> u16 {
         match op {
+            Token::RCurly | Token::LCurly => 0,
             Token::Addition => 1,
             Token::Subtraction => 2,
             Token::Multiplication => 3,
             Token::Division => 4,
             Token::Power => 5,
-            Token::IsNotEqual | Token::IsEqual => 6,
-            _ => 0,
+            Token::IsNotEqual
+            | Token::IsEqual
+            | Token::IsGreater
+            | Token::IsLesser
+            | Token::IsGreaterEqual
+            | Token::IsLesserEqual => 6,
+            _ => {
+                self.throw(
+                    5,
+                    format!("infix binding power not set for operator {op:?}"),
+                    false,
+                );
+                0
+            }
         }
     }
 }
