@@ -1,108 +1,66 @@
-use logos::Logos;
-use std::fmt::{Display, Error, Formatter};
+use std::fmt::{Debug, Display, Error, Formatter};
 
-#[derive(Logos, Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Token {
-    /// Keyword: let
-    #[token("let")]
     Let,
-    /// Keyword: if
-    #[token("if")]
+
     If,
-    /// Keyword: loop
-    #[token("loop")]
+
+    Then,
+
     Loop,
 
-    /// Keyword: ;
-    #[token(";", logos::skip)]
-    Semicolon,
-    /// Keyword: ,
-    #[token(",")]
     Comma,
 
-    /// Keyword: +
-    #[token("+")]
     Addition,
-    /// Keyword: -
-    #[token("-")]
+
     Subtraction,
-    /// Keyword: *
-    #[token("*")]
+
     Multiplication,
-    /// Keyword: /
-    #[token("/")]
+
     Division,
-    /// Keyword: ^ OR **
-    #[token("^")]
-    #[token("**")]
+
     Power,
-    /// Keyword: =
-    #[token("=")]
+
     Equal,
-    /// Keyword: ==
-    #[token("==")]
+
     IsEqual,
-    /// Keyword: !=
-    #[token("!=")]
+
     IsNotEqual,
-    /// Keyword: >
-    #[token(">")]
+
     IsGreater,
-    /// Keyword: <
-    #[token("<")]
+
     IsLesser,
-    /// Keyword: >=
-    #[token(">=")]
+
     IsGreaterEqual,
-    /// Keyword: <=
-    #[token("<=")]
+
     IsLesserEqual,
 
-    #[regex("[A-Za-z]+")]
-    Ident,
-    #[regex("[A-Za-z]+()", priority = 2)]
-    FunctionName,
-    #[regex("\"[A-Za-z0-9 !]+\"")]
-    String,
-    #[regex("[0-9]+")]
-    Integer,
+    Identifier(String),
 
-    /// Keyword: true|false
-    #[regex("true|false")]
-    Bool,
+    FunctionName(String),
 
-    /// Keyword: (
-    #[token("(")]
+    String(String),
+
+    Integer(i64),
+
+    Bool(bool),
+
     LParen,
-    /// Keyword: )
-    #[token(")")]
+
     RParen,
-    /// Keyword: {
-    #[token("{")]
+
     LCurly,
-    /// Keyword: }
-    #[token("}")]
+
     RCurly,
 
-    /// Keyword: print
-    #[token("print")]
-    Print,
-    /// Keyword: println
-    #[token("println")]
-    Println,
-    /// Keyword: exit
-    #[token("exit")]
     Exit,
-    /// Keyword: break
-    #[token("break")]
+
     Break,
 
-    #[regex(r"/\*([^*]|\*[^/])+\*/", logos::skip)]
     Comment,
-    #[regex(" +", logos::skip)]
-    NewLine,
-    #[error]
-    Error,
+
+    Error(String, String),
 }
 
 impl Display for Token {

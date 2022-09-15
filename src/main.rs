@@ -1,11 +1,12 @@
-use clap::Parser as clap_parser;
+use clap::Parser;
 use std::fs;
 
 mod lexer;
-mod parser;
 mod token;
+mod expression;
+mod ast;
 
-#[derive(clap_parser, Debug)]
+#[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
     /// Whether to output debug information
@@ -23,32 +24,17 @@ fn main() {
     run(filename, args.debug);
 }
 
-fn run(mut file: String, debug: bool) {
+fn run(mut file: String, _debug: bool) {
     if fs::metadata(&file).unwrap().is_dir() {
         file = file.to_owned() + "/main.o";
     }
 
     let contents = match fs::read_to_string(&file) {
         Ok(text) => text,
-        Err(e) => {
-            parser::Parser::new(String::new(), vec![String::new()]).throw(
-                0,
-                format!("Error while reading file {}:\n\t{e}", file),
-                false,
-            );
-            String::new()
-        }
+        Err(_) => String::new(),
     };
 
-    let parser = parser::Parser::new(
-        file,
-        contents.lines().map(|f| f.trim().to_string()).collect(),
-    )
-    .run();
-
-    if debug {
-        println!("{parser:#?}");
-    }
+    lexer::Lexer::new(contents).tokenize().lex();
 }
 
 #[cfg(test)]
