@@ -104,7 +104,7 @@ if a == 5 {
 
 ### Loop statements
 
-Loop statements repeat given conditions until `break` is called.The conditions to be executed in the loop must be followed after the `loop` keyword in `{}`.
+Loop statements repeat given conditions until `break` is called. The conditions to be executed in the loop must be followed after the `loop` keyword in `{}`.
 
 ```ox
 let b = 0;
@@ -137,7 +137,7 @@ message(text);
 
 ### Exiting
 
-The `exit` keyword can be used to exit the program with the specified exit code
+The `exit` keyword can be used to exit the program with the specified exit code.
 
 ```ox
 let code = 1;
