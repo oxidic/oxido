@@ -17,11 +17,14 @@ impl Lexer {
         }
     }
 
-    pub fn ast(&mut self, line: Vec<Token>, mut i: usize, push: bool) -> (Ast, usize) {
+    pub fn ast(&mut self, mut line: Vec<Token>, mut i: usize, push: bool) -> (Ast, usize) {
         let mut ast: Ast = Ast::Placeholder;
-        match line.first().unwrap() {
+        match line.clone().first().unwrap() {
             Token::Let => {
                 if let Token::Identifier(ident) = line.clone().get(1).unwrap() {
+                    if line.pop() != Some(Token::Semicolon) {
+                        panic!("expected semicolon on line: {line:?}")
+                    }
                     let (expr, _) = self.pratt_parser(
                         line.into_iter()
                             .enumerate()
@@ -35,6 +38,9 @@ impl Lexer {
                 }
             }
             Token::Identifier(ident) => {
+                if line.pop() != Some(Token::Semicolon) {
+                    panic!("expected semicolon on line: {line:?}")
+                }
                 let (expr, _) = self.pratt_parser(
                     line.clone()
                         .into_iter()
@@ -70,29 +76,41 @@ impl Lexer {
                         let mut ast_vec = vec![];
                         let range = i..self.tokens.len();
                         for _ in range {
-                            if brackets_open == 0 {
+                            if brackets_open == 0 || self.tokens.get(i + 1) == None {
                                 break;
                             }
                             statement = self.tokens.get(i + 1).unwrap().to_vec();
                             if statement.iter().any(|f| f == &Token::RCurly) {
                                 brackets_open -= 1;
-                            } else if statement.iter().any(|f| f == &Token::LCurly) {
+                            } else if statement.iter().any(|f| f == &Token::LCurly)
+                                && !statement.iter().any(|f| f == &Token::If)
+                                && !statement.iter().any(|f| f == &Token::Loop)
+                            {
                                 brackets_open += 1;
                             }
                             if brackets_open == 0 {
                                 i += 1;
                                 break;
                             }
-                            let (temp_ast, _) = self.ast(statement, i, false);
+                            let (temp_ast, j) = self.ast(statement, i + 1, false);
                             ast_vec.push(temp_ast);
-                            i += 1;
+                            i = j;
                         }
                         ast = Ast::If(expr, ast_vec);
+                        i += 1;
                     } else {
                         statement.pop();
-                        (ast, i) = self.ast(statement, i, false);
-                        i += 1;
-                        ast = Ast::If(expr, vec![ast.clone()]);
+                        let mut statements = vec![];
+                        let mut temp_statements = vec![];
+                        for token in statement.clone() {
+                            temp_statements.push(token.clone());
+                            if token == Token::Semicolon {
+                                (ast, i) = self.ast(temp_statements.clone(), i, false);
+                                statements.push(ast);
+                                temp_statements.clear();
+                            }
+                        }
+                        ast = Ast::If(expr, statements);
                     }
                 } else if then_pos != None {
                     let (c, s) = line.split_at(then_pos.unwrap() + 1);
@@ -117,6 +135,84 @@ impl Lexer {
                     i += 1;
                     ast = Ast::If(expr, vec![ast.clone()]);
                 }
+            }
+            Token::Loop => {
+                let mut brackets_open = 1;
+                let mut ast_vec = vec![];
+                let range = i..self.tokens.len();
+                for _ in range {
+                    if brackets_open == 0 || self.tokens.get(i + 1) == None {
+                        break;
+                    }
+                    let statement = self.tokens.get(i + 1).unwrap().to_vec();
+                    if statement.iter().any(|f| f == &Token::RCurly) {
+                        brackets_open -= 1;
+                    } else if statement.iter().any(|f| f == &Token::LCurly)
+                        && !statement.iter().any(|f| f == &Token::If)
+                        && !statement.iter().any(|f| f == &Token::Loop)
+                    {
+                        brackets_open += 1;
+                    }
+                    if brackets_open == 0 {
+                        i += 1;
+                        break;
+                    }
+                    let (temp_ast, j) = self.ast(statement, i + 1, false);
+                    ast_vec.push(temp_ast);
+                    i = j;
+                }
+                ast = Ast::Loop(ast_vec);
+                i += 1;
+            }
+            Token::Break => {
+                ast = Ast::Break;
+            }
+            Token::Function => {
+                if let Token::FunctionSignature(name, args) = line.get(1).unwrap() {
+                    let mut brackets_open = 1;
+                    let mut ast_vec = vec![];
+                    let range = i..self.tokens.len();
+                    for _ in range {
+                        if brackets_open == 0 || self.tokens.get(i + 1) == None {
+                            break;
+                        }
+                        let statement = self.tokens.get(i + 1).unwrap().to_vec();
+                        if statement.iter().any(|f| f == &Token::RCurly) {
+                            brackets_open -= 1;
+                        } else if statement.iter().any(|f| f == &Token::LCurly)
+                            && !statement.iter().any(|f| f == &Token::If)
+                            && !statement.iter().any(|f| f == &Token::Loop)
+                        {
+                            brackets_open += 1;
+                        }
+                        if brackets_open == 0 {
+                            i += 1;
+                            break;
+                        }
+                        let (temp_ast, j) = self.ast(statement, i + 1, false);
+                        ast_vec.push(temp_ast);
+                        i = j;
+                    }
+                    ast = Ast::Function(name.to_string(), args.to_vec(), ast_vec);
+                    i += 1;
+                }
+            }
+            Token::Return => {
+                if line.pop() != Some(Token::Semicolon) {
+                    panic!("expected semicolon on line: {line:?}")
+                }
+                let (expr, _) = self.pratt_parser(
+                    line.clone()
+                        .into_iter()
+                        .enumerate()
+                        .filter(|(i, _)| i > &0)
+                        .map(|(_, v)| v)
+                        .collect::<Vec<Token>>()
+                        .into_iter(),
+                    0,
+                );
+                println!("{line:?}");
+                ast = Ast::Return(expr);
             }
             t => {
                 panic!("{t} serves no purpose in AST tree!")
@@ -155,13 +251,16 @@ impl Lexer {
     pub fn tokenize(&mut self) -> &mut Lexer {
         for mut line in self.lines.clone() {
             let mut array = vec![];
-            line = line.trim().replace(';', "");
+            line = line.trim().to_string();
             for word in line.split_whitespace() {
-                let token = match word {
+                let has_semi = word.ends_with(';');
+                let word = word.replace(';', "");
+                let token = match word.as_str() {
                     "let" => Token::Let,
                     "if" => Token::If,
                     "then" => Token::Then,
                     "loop" => Token::Loop,
+                    "fn" => Token::Function,
                     "," => Token::Comma,
                     "+" => Token::Addition,
                     "-" => Token::Subtraction,
@@ -181,11 +280,21 @@ impl Lexer {
                     "}" => Token::RCurly,
                     "exit" => Token::Exit,
                     "break" => Token::Break,
+                    "return" => Token::Return,
                     "//" => Token::Comment,
                     "true" | "false" => Token::Bool(word.parse::<bool>().unwrap()),
                     _ => {
-                        if word.ends_with("()") {
-                            Token::FunctionName(word.to_string())
+                        if word.ends_with(')') {
+                            Token::Call(word.to_string())
+                        } else if word.ends_with(']') {
+                            let mut signature = word.split('[');
+                            let name = signature.next().unwrap().to_string();
+                            let signature = signature.collect::<String>();
+                            let signature = signature.split(']');
+                            let signature = signature.collect::<String>();
+                            let signature = signature.split(',');
+                            let args = signature.map(|f| f.into()).collect::<Vec<String>>();
+                            Token::FunctionSignature(name, args)
                         } else if word.starts_with('"') && word.ends_with('"') {
                             Token::String(word.to_string())
                         } else if word.parse::<i64>().is_ok() {
@@ -198,6 +307,9 @@ impl Lexer {
                     }
                 };
                 array.push(token);
+                if has_semi {
+                    array.push(Token::Semicolon);
+                }
             }
             self.tokens.push(array);
         }

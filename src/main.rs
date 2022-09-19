@@ -1,10 +1,10 @@
 use clap::Parser;
 use std::fs;
 
+mod ast;
+mod expression;
 mod lexer;
 mod token;
-mod expression;
-mod ast;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -42,27 +42,32 @@ mod tests {
     use super::run;
 
     #[test]
-    fn declaration() {
-        run("tests/declaration.o".to_string(), false)
+    fn example() {
+        run("examples".to_string(), false)
     }
 
-    #[test]
-    fn reassignment() {
-        run("tests/reassignment.o".to_string(), false)
-    }
+    // #[test]
+    // fn declaration() {
+    //     run("tests/declaration.o".to_string(), false)
+    // }
 
-    #[test]
-    fn function() {
-        run("tests/function.o".to_string(), false)
-    }
+    // #[test]
+    // fn reassignment() {
+    //     run("tests/reassignment.o".to_string(), false)
+    // }
 
-    #[test]
-    fn r#if() {
-        run("tests/if.o".to_string(), false)
-    }
+    // #[test]
+    // fn function() {
+    //     run("tests/function.o".to_string(), false)
+    // }
 
-    #[test]
-    fn r#loop() {
-        run("tests/loop.o".to_string(), false)
-    }
+    // #[test]
+    // fn r#if() {
+    //     run("tests/if.o".to_string(), false)
+    // }
+
+    // #[test]
+    // fn r#loop() {
+    //     run("tests/loop.o".to_string(), false)
+    // }
 }

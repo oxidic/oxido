@@ -7,5 +7,5 @@ pub enum Expression {
     Identifier(String),
     Bool(bool),
     String(String),
-    Placeholder
+    Placeholder,
 }

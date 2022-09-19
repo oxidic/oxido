@@ -10,6 +10,10 @@ pub enum Token {
 
     Loop,
 
+    Function,
+
+    Semicolon,
+
     Comma,
 
     Addition,
@@ -38,7 +42,9 @@ pub enum Token {
 
     Identifier(String),
 
-    FunctionName(String),
+    Call(String),
+
+    FunctionSignature(String, Vec<String>),
 
     String(String),
 
@@ -57,6 +63,8 @@ pub enum Token {
     Exit,
 
     Break,
+
+    Return,
 
     Comment,
 

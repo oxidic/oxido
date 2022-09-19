@@ -1,5 +1,7 @@
-let a = 5;
+let a = 5 + 7 + 10;
 
-if a == 5 {
-    a = 6
+fn add[a] {
+    return a + 1;
 }
+
+add[a];
