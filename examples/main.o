@@ -1,7 +1,3 @@
 let a = 5 + 7 + 10;
 
-fn add[a] {
-    return a + 1;
-}
-
-add[a];
+print(a);

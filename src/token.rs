@@ -42,13 +42,17 @@ pub enum Token {
 
     Identifier(String),
 
-    Call(String),
+    FunctionName(String),
 
-    FunctionSignature(String, Vec<String>),
+    FunctionParameter(String, String),
+
+    FunctionCall(String),
 
     String(String),
 
     Integer(i64),
+
+    Float(f64),
 
     Bool(bool),
 
@@ -59,6 +63,8 @@ pub enum Token {
     LCurly,
 
     RCurly,
+
+    Get,
 
     Exit,
 

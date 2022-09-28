@@ -9,3 +9,11 @@ pub enum Expression {
     String(String),
     Placeholder,
 }
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Data {
+    Integer(i64),
+    Bool(bool),
+    String(String),
+    Placeholder,
+}

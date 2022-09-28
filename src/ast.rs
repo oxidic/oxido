@@ -1,13 +1,21 @@
-use crate::expression::Expression;
+use crate::expression::{Expression};
+use std::fmt::{Debug, Display, Error, Formatter};
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Ast {
+pub enum AstNode {
     Placeholder,
     Declaration(String, Expression),
     Redeclaration(String, Expression),
-    If(Expression, Vec<Ast>),
-    Loop(Vec<Ast>),
+    If(Expression, Vec<AstNode>),
+    Loop(Vec<AstNode>),
     Break,
     Return(Expression),
-    Function(String, Vec<String>, Vec<Ast>),
+    Function(String, Vec<String>, Vec<AstNode>),
+    Call(String, Vec<Expression>)
+}
+
+impl Display for AstNode {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        write!(f, "{:?}", self)
+    }
 }

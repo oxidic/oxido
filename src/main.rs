@@ -1,12 +1,14 @@
-use clap::Parser;
+use clap::Parser as ClapParser;
 use std::fs;
+use crate::parser::Parser;
 
 mod ast;
 mod expression;
-mod lexer;
+mod parser;
 mod token;
+mod globals;
 
-#[derive(Parser, Debug)]
+#[derive(ClapParser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
     /// Whether to output debug information
@@ -34,7 +36,7 @@ fn run(mut file: String, _debug: bool) {
         Err(_) => String::new(),
     };
 
-    lexer::Lexer::new(contents).tokenize().lex();
+    Parser::new(contents).run();
 }
 
 #[cfg(test)]
