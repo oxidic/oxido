@@ -10,7 +10,7 @@ pub enum AstNode {
     Loop(Vec<AstNode>),
     Break,
     Return(Expression),
-    Function(String, Vec<String>, Vec<AstNode>),
+    FunctionDeclaration(String, Vec<String>, Vec<AstNode>),
     Call(String, Vec<Expression>)
 }
 

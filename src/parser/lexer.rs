@@ -65,13 +65,13 @@ impl Lexer {
                     "if" => Token::If,
                     "then" => Token::Then,
                     "loop" => Token::Loop,
-                    "fn" => Token::Function,
+                    "fn" => Token::Fn,
                     "exit" => Token::Exit,
                     "break" => Token::Break,
                     "return" => Token::Return,
                     "true" | "false" => Token::Bool(current_token.parse::<bool>().unwrap()),
                     _ => {
-                        if self.last_token == Token::Function {
+                        if self.last_token == Token::Fn {
                             Token::FunctionName(current_token)
                         } else if let Token::FunctionName(name) = &self.last_token {
                             Token::FunctionParameter(name.clone(), current_token)

@@ -15,6 +15,7 @@ pub struct Parser {
     pub ast: Vec<AstNode>,
     pub variables: HashMap<String, Data>,
     pub functions: HashMap<String, (Vec<String>, Vec<AstNode>)>,
+    pub scope_variables: HashMap<String, Data>,
     r#break: bool,
 }
 
@@ -24,6 +25,7 @@ impl Parser {
         Self {
             ast: ast.tree(),
             variables: HashMap::new(),
+            scope_variables: HashMap::new(),
             functions: HashMap::new(),
             r#break: false,
         }
@@ -59,11 +61,19 @@ impl Parser {
             },
             AstNode::Break => self.r#break = true,
             AstNode::Return(_) => todo!(),
-            AstNode::Function(name, args, code) => {
+            AstNode::FunctionDeclaration(name, args, code) => {
                 self.functions.insert(name, (args, code));
             }
             AstNode::Call(name, args) => {
-                if !self.functions.contains_key(&name) {
+                println!("{name}");
+                if self.functions.get(&name).is_some() {
+                    let (parameters, lines) = self.functions.get(&name).unwrap();
+                    let mut arguments = HashMap::new();
+                    for (i, parameter) in parameters.iter().enumerate() {
+                        arguments.insert(parameter.to_string(), args.get(i).unwrap().clone());
+                    }
+                    println!("{arguments:?}");
+                } else {
                     match name.as_str() {
                         "print" => {
                             Globals::print(self.parse_expression(args.get(0).unwrap().clone()))
@@ -83,6 +93,7 @@ impl Parser {
 
     pub fn run(&mut self) {
         for ast in self.ast.clone() {
+            println!("{ast}");
             self.match_ast(ast);
         }
     }

@@ -10,7 +10,7 @@ pub enum Token {
 
     Loop,
 
-    Function,
+    Fn,
 
     Semicolon,
 

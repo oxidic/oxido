@@ -168,9 +168,19 @@ impl Ast {
             Token::Break => {
                 ast = AstNode::Break;
             }
-            //TODO: Make this work with args
-            Token::Function => {
-                if let Token::FunctionName(_name) = line.get(1).unwrap() {
+            Token::Fn => {
+                if let Token::FunctionName(name) = line.get(1).unwrap() {
+                    let mut args = vec![];
+
+                    for arg in line.clone() {
+                        if arg == Token::RParen {
+                            break;
+                        }
+                        if let Token::Identifier(name) = arg {
+                            args.push(name);
+                        }
+                    }
+
                     let mut brackets_open = 1;
                     let mut ast_vec = vec![];
                     let range = i..self.tokens.len();
@@ -195,7 +205,7 @@ impl Ast {
                         ast_vec.push(temp_ast);
                         i = j;
                     }
-                    // ast = AstNode::Function(name.to_string(), args.to_vec(), ast_vec);
+                    ast = AstNode::FunctionDeclaration(name.to_string(), args.to_vec(), ast_vec);
                     i += 1;
                 }
             }
