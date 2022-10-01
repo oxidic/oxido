@@ -54,7 +54,10 @@ impl Lexer {
                         peeked.unwrap()
                     };
 
-                    if !(next.is_alphanumeric() || next == &'_') {
+                    if !next.is_alphanumeric() {
+                        if next == &'(' {
+                            current_token.push('(');
+                        }
                         break;
                     }
                     current_token.push(*next);
@@ -75,7 +78,11 @@ impl Lexer {
                             Token::FunctionName(current_token)
                         } else if let Token::FunctionName(name) = &self.last_token {
                             Token::FunctionParameter(name.clone(), current_token)
-                        } else {
+                        } else if current_token.ends_with('(') {
+                            current_token.pop();
+                            Token::FunctionName(current_token)
+                        }
+                        else {
                             Token::Identifier(current_token)
                         }
                     }

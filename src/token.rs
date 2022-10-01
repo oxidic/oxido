@@ -46,8 +46,6 @@ pub enum Token {
 
     FunctionParameter(String, String),
 
-    FunctionCall(String),
-
     String(String),
 
     Integer(i64),
@@ -71,10 +69,6 @@ pub enum Token {
     Break,
 
     Return,
-
-    Comment,
-
-    Error(String, String),
 }
 
 impl Display for Token {

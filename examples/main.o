@@ -1,5 +1,7 @@
-fn add(a) {
-    return a + 1;
+fn main(a) {
+    println(a);
+    print(a);
+    println();
 }
 
-add(5);
+main(5);

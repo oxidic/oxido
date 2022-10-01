@@ -170,6 +170,8 @@ impl Ast {
             }
             Token::Fn => {
                 if let Token::FunctionName(name) = line.get(1).unwrap() {
+                    let mut name = name.clone();
+                    name.pop();
                     let mut args = vec![];
 
                     for arg in line.clone() {
@@ -226,21 +228,37 @@ impl Ast {
                 );
                 ast = AstNode::Return(expr);
             }
-            //TODO: Deal with this error
-            // Token::FunctionSignature(name, args) => {
-            //     let mut parsed_args = vec![];
-            //     for arg in args {
-            //         let mut lexer = Lexer::new(arg.to_string());
-            //         let (expr, _) = self.pratt_parser(lexer.tokenize().get(0).unwrap().clone().into_iter().peekable(), 0);
-            //         parsed_args.push(expr);
-            //     }
+            Token::FunctionName(name) => {
+                line.pop();
 
-            //     ast = AstNode::Call(
-            //         name.to_string(),
-            //         parsed_args,
-            //     );
-            // }
-            Token::Comment => {}
+                let mut args = vec![];
+                let mut temp_args = vec![];
+                let mut expressions = vec![];
+
+                let tokens = line[2..].iter();
+
+                for token in tokens {
+                    if token == &Token::Comma {
+                        args.push(temp_args.clone());
+                        temp_args.clear();
+                        continue;
+                    }
+                    if token == &Token::RParen {
+                        args.push(temp_args.clone());
+                        temp_args.clear();
+                        break;
+                    }
+                    temp_args.push(token.clone());
+                }
+
+                for arg in args {
+                    let (expr, _) = self.pratt_parser(arg.into_iter().peekable(), 0);
+
+                    expressions.push(expr);
+                }
+
+                ast = AstNode::Call(name.to_string(), expressions);
+            }
             t => {
                 println!("{t} serves no purpose in AST tree!")
             }
@@ -280,6 +298,9 @@ impl Ast {
         mut lexer: Peekable<IntoIter<Token>>,
         prec: u16,
     ) -> (Expression, Peekable<IntoIter<Token>>) {
+        if lexer.clone().next() == None {
+            return (Expression::String(String::new()), lexer);
+        }
         let token = lexer.next().unwrap();
         let mut expr: Expression = Expression::Placeholder;
 

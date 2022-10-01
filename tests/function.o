@@ -1,6 +1,6 @@
 let text = "Hi mom!";
 
-message(text) {
+fn message(text) {
     print(text);
 }
 

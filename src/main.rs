@@ -26,7 +26,7 @@ fn main() {
     run(filename, args.debug);
 }
 
-fn run(mut file: String, _debug: bool) {
+fn run(mut file: String, debug: bool) {
     if fs::metadata(&file).unwrap().is_dir() {
         file = file.to_owned() + "/main.o";
     }
@@ -36,7 +36,7 @@ fn run(mut file: String, _debug: bool) {
         Err(_) => String::new(),
     };
 
-    Parser::new(contents).run();
+    Parser::new(contents, debug).run();
 }
 
 #[cfg(test)]
@@ -48,28 +48,28 @@ mod tests {
         run("examples".to_string(), false)
     }
 
-    // #[test]
-    // fn declaration() {
-    //     run("tests/declaration.o".to_string(), false)
-    // }
+    #[test]
+    fn declaration() {
+        run("tests/declaration.o".to_string(), false)
+    }
 
-    // #[test]
-    // fn reassignment() {
-    //     run("tests/reassignment.o".to_string(), false)
-    // }
+    #[test]
+    fn reassignment() {
+        run("tests/reassignment.o".to_string(), false)
+    }
 
-    // #[test]
-    // fn function() {
-    //     run("tests/function.o".to_string(), false)
-    // }
+    #[test]
+    fn function() {
+        run("tests/function.o".to_string(), false)
+    }
 
-    // #[test]
-    // fn r#if() {
-    //     run("tests/if.o".to_string(), false)
-    // }
+    #[test]
+    fn r#if() {
+        run("tests/if.o".to_string(), false)
+    }
 
-    // #[test]
-    // fn r#loop() {
-    //     run("tests/loop.o".to_string(), false)
-    // }
+    #[test]
+    fn r#loop() {
+        run("tests/loop.o".to_string(), false)
+    }
 }
