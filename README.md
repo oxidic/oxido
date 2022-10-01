@@ -3,6 +3,7 @@
 **Table of Contents**:
 
 - [Oxido](#oxido)
+  - [Extension](#extension)
   - [Installation](#installation)
   - [Uninstallation](#uninstallation)
   - [Usage](#usage)
@@ -16,7 +17,11 @@
     - [Functions](#functions)
     - [Exiting](#exiting)
 
-Oxido is a dynamic interpreted programming language basing most of its syntax on Rust. Conventionally, the files may end with the `o` extension, however Oxido ignores the extension.
+Oxido is a dynamic interpreted programming language basing most of its syntax on Rust.
+
+## Extension:
+
+The files may end with the `o` extension, however the extension is ignored.
 
 ## Installation
 
@@ -128,7 +133,7 @@ Funcitons store the given conditions until they are called. They are declared wi
 ```ox
 let text = "Hi mom!";
 
-message(text) {
+fn message(text) {
     print(text);
 }
 
