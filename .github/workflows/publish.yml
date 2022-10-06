@@ -1,7 +1,7 @@
 on:
-  workflow_dispatch:
-  release:
-    types: [created]
+  push:
+    tags:
+    - '*'
 
 jobs:
   release:
@@ -12,29 +12,35 @@ jobs:
       matrix:
         include:
           - target: x86_64-pc-windows-gnu
-            archive: zip
-            name: oxido-windows
+            name: oxido.exe
           - target: x86_64-unknown-linux-musl
-            archive: tar.gz tar.xz
-            name: oxido-linux
+            name: oxido
           - target: x86_64-apple-darwin
-            archive: zip
             name: oxido-darwin
     steps:
       - uses: actions/checkout@master
-      - run: rustup toolchain install stable --profile minimal
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions-rs/toolchain@v1
         with:
-          shared-key: ""
-          key: ""
-          env-vars: ""
-          workspaces: ""
-          cache-on-failure: ""
-      - name: Compile and release
-        uses: rust-build/rust-build.action@v1.3.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            toolchain: stable
+            default: true
+            override: true
+            components: rustfmt, clippy
+      - uses: actions/cache@v3
         with:
-          RUSTTARGET: ${{ matrix.target }}
-          ARCHIVE_TYPES: ${{ matrix.archive }}
-          ARCHIVE_NAME: ${{ matrix.name }}
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+      - run: cp target/release/$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[].targets[] | select( .kind | map(. == "bin") | any ) | .name') $(echo ${{ matrix.name }})
+      - uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: ${{ matrix.name }}
