@@ -4,14 +4,16 @@ pub struct Lexer {
     pub lines: Vec<String>,
     pub tokens: Vec<Vec<Token>>,
     pub last_token: Token,
+    pub debug: bool,
 }
 
 impl Lexer {
-    pub fn new(raw: String) -> Self {
+    pub fn new(raw: String, debug: bool) -> Self {
         Self {
             lines: raw.lines().map(String::from).collect(),
             tokens: vec![],
             last_token: Token::Semicolon,
+            debug,
         }
     }
 
@@ -81,8 +83,7 @@ impl Lexer {
                         } else if current_token.ends_with('(') {
                             current_token.pop();
                             Token::FunctionName(current_token)
-                        }
-                        else {
+                        } else {
                             Token::Identifier(current_token)
                         }
                     }
@@ -228,6 +229,9 @@ impl Lexer {
         for line in self.lines.clone() {
             let tokens = self.get_token(line);
             self.tokens.push(tokens);
+        }
+        if self.debug {
+            println!("T: {:?}", self.tokens);
         }
         self.tokens.clone()
     }

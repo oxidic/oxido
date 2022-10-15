@@ -17,18 +17,20 @@ pub struct Parser {
     pub functions: HashMap<String, (Vec<String>, Vec<AstNode>)>,
     pub scope_variables: HashMap<String, Data>,
     pub debug: bool,
+    no_run: bool,
     r#break: bool,
 }
 
 impl Parser {
-    pub fn new(raw: String, debug: bool) -> Self {
-        let mut ast = Ast::new(raw);
+    pub fn new(raw: String, debug: bool, no_run: bool) -> Self {
+        let mut ast = Ast::new(raw, debug);
         Self {
             ast: ast.tree(),
             variables: HashMap::new(),
             scope_variables: HashMap::new(),
             functions: HashMap::new(),
             debug,
+            no_run,
             r#break: false,
         }
     }
@@ -71,7 +73,10 @@ impl Parser {
                     let (params, lines) = self.functions.get(&name).unwrap();
                     let old_vars = self.variables.clone();
                     for (i, param) in params.iter().enumerate() {
-                        self.variables.insert(param.to_string(), self.parse_expression(args.get(i).unwrap().clone()));
+                        self.variables.insert(
+                            param.to_string(),
+                            self.parse_expression(args.get(i).unwrap().clone()),
+                        );
                     }
                     for line in lines.clone() {
                         self.match_ast(line);
@@ -85,9 +90,13 @@ impl Parser {
                         "print" => {
                             Globals::print(self.parse_expression(args.get(0).unwrap().clone()))
                         }
-                        "println" => {
-                            Globals::println(self.parse_expression(args.get(0).unwrap_or(&Expression::String(String::new())).clone()))
-                        }
+                        "println" => Globals::println(
+                            self.parse_expression(
+                                args.get(0)
+                                    .unwrap_or(&Expression::String(String::new()))
+                                    .clone(),
+                            ),
+                        ),
                         _ => {
                             panic!("function {name} not found! {:?}", self.functions);
                         }
@@ -99,8 +108,10 @@ impl Parser {
     }
 
     pub fn run(&mut self) {
-        for ast in self.ast.clone() {
-            self.match_ast(ast);
+        if !self.no_run {
+            for ast in self.ast.clone() {
+                self.match_ast(ast);
+            }
         }
         if self.debug {
             println!("{:?}", self.ast);

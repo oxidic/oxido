@@ -1,4 +1,4 @@
-use crate::expression::{Expression};
+use crate::expression::Expression;
 use std::fmt::{Debug, Display, Error, Formatter};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -11,7 +11,7 @@ pub enum AstNode {
     Break,
     Return(Expression),
     FunctionDeclaration(String, Vec<String>, Vec<AstNode>),
-    Call(String, Vec<Expression>)
+    Call(String, Vec<Expression>),
 }
 
 impl Display for AstNode {

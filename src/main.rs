@@ -1,12 +1,12 @@
+use crate::parser::Parser;
 use clap::Parser as ClapParser;
 use std::fs;
-use crate::parser::Parser;
 
 mod ast;
 mod expression;
+mod globals;
 mod parser;
 mod token;
-mod globals;
 
 #[derive(ClapParser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -14,6 +14,10 @@ struct Args {
     /// Whether to output debug information
     #[clap(short, long, value_parser)]
     debug: bool,
+
+    /// Whether to not run the actual code
+    #[clap(short, long, value_parser)]
+    no_run: bool,
 
     #[clap()]
     input: String,
@@ -23,10 +27,14 @@ fn main() {
     let args = Args::parse();
     let filename = String::from(&args.input);
 
-    run(filename, args.debug);
+    if args.debug {
+        println!("D: {}\nN: {}", args.debug, args.no_run);
+    }
+
+    run(filename, args.debug, args.no_run);
 }
 
-fn run(mut file: String, debug: bool) {
+fn run(mut file: String, debug: bool, no_run: bool) {
     if fs::metadata(&file).unwrap().is_dir() {
         file = file.to_owned() + "/main.o";
     }
@@ -36,7 +44,7 @@ fn run(mut file: String, debug: bool) {
         Err(_) => String::new(),
     };
 
-    Parser::new(contents, debug).run();
+    Parser::new(contents, debug, no_run).run();
 }
 
 #[cfg(test)]

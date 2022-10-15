@@ -3,14 +3,16 @@ use std::{iter::Peekable, vec::IntoIter};
 pub struct Ast {
     pub tokens: Vec<Vec<Token>>,
     pub ast: Vec<AstNode>,
+    pub debug: bool,
 }
 
 impl Ast {
-    pub fn new(raw: String) -> Self {
-        let mut lexer = Lexer::new(raw);
+    pub fn new(raw: String, debug: bool) -> Self {
+        let mut lexer = Lexer::new(raw, debug);
         Self {
             tokens: lexer.tokenize(),
             ast: vec![],
+            debug,
         }
     }
 
@@ -289,6 +291,9 @@ impl Ast {
             if c + 1 == self.tokens.len() {
                 break;
             }
+        }
+        if self.debug {
+            println!("A: {:?}", self.ast);
         }
         self.ast.clone()
     }
