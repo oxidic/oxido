@@ -1,7 +1,0 @@
-let number = 0;
-let bool = true;
-let string = "Hi mom!";
-
-print(number);
-print(bool);
-print(string);

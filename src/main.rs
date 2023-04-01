@@ -1,11 +1,8 @@
-use crate::parser::Parser;
 use clap::Parser as ClapParser;
+use lexer::Lexer;
 use std::fs;
 
-mod ast;
-mod expression;
-mod globals;
-mod parser;
+mod lexer;
 mod token;
 
 #[derive(ClapParser, Debug)]
@@ -44,40 +41,6 @@ fn run(mut file: String, debug: bool, no_run: bool) {
         Err(_) => String::new(),
     };
 
-    Parser::new(contents, debug, no_run).run();
-}
+    Lexer::new(contents).lexer();
 
-#[cfg(test)]
-mod tests {
-    use super::run;
-
-    #[test]
-    fn example() {
-        run("examples".to_string(), false)
-    }
-
-    #[test]
-    fn declaration() {
-        run("tests/declaration.o".to_string(), false)
-    }
-
-    #[test]
-    fn reassignment() {
-        run("tests/reassignment.o".to_string(), false)
-    }
-
-    #[test]
-    fn function() {
-        run("tests/function.o".to_string(), false)
-    }
-
-    #[test]
-    fn r#if() {
-        run("tests/if.o".to_string(), false)
-    }
-
-    #[test]
-    fn r#loop() {
-        run("tests/loop.o".to_string(), false)
-    }
 }

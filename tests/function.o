@@ -1,7 +1,0 @@
-let text = "Hi mom!";
-
-fn message(text) {
-    print(text);
-}
-
-message(text);

@@ -1,5 +1,0 @@
-let number = 0;
-
-if number < 5 {
-    print(number);
-}
