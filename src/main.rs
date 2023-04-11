@@ -1,11 +1,13 @@
-use clap::Parser as ClapParser;
+use clap::Parser;
 use lexer::Lexer;
 use std::fs;
 
+mod ast;
 mod lexer;
+mod parser;
 mod token;
 
-#[derive(ClapParser, Debug)]
+#[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
     /// Whether to output debug information
@@ -24,10 +26,6 @@ fn main() {
     let args = Args::parse();
     let filename = String::from(&args.input);
 
-    if args.debug {
-        println!("D: {}\nN: {}", args.debug, args.no_run);
-    }
-
     run(filename, args.debug, args.no_run);
 }
 
@@ -41,6 +39,21 @@ fn run(mut file: String, debug: bool, no_run: bool) {
         Err(_) => String::new(),
     };
 
-    Lexer::new(contents).lexer();
+    let mut lexer = Lexer::new(&contents);
+    let tokens = lexer.run();
 
+    if debug {
+        println!("LEXER: {tokens:?}\n");
+    }
+
+    if no_run {
+        return;
+    }
+
+    let mut parser = parser::Parser::new(tokens.to_vec());
+    let ast = parser.run();
+
+    if debug {
+        println!("AST: {ast:?}\n");
+    }
 }

@@ -1,7 +1,8 @@
-fn main(a) {
-    println(a);
-    print(a);
-    println();
-}
+let a = 5;
 
-main(5);
+if a < 15 {
+    if a < 10 {
+        a = a - 5;
+    }
+    a = a - 10;
+}
