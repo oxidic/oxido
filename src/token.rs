@@ -23,6 +23,7 @@ pub enum Token {
 
     Identifier(String),
     FunctionName(String),
+    FunctionCall(String),
 
     String(String),
     Integer(i64),

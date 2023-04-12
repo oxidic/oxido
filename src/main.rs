@@ -8,6 +8,7 @@ mod parser;
 mod token;
 mod interpreter;
 mod datatype;
+mod globals;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]

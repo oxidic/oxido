@@ -80,6 +80,27 @@ impl Parser {
 
                     pos += 1;
                 }
+            } else if let Token::FunctionCall(_) = token {
+                loop {
+                    let token = tokens.get(pos);
+
+                    if token == None {
+                        break;
+                    }
+
+                    let token = token.unwrap();
+
+                    if token == &Token::Semicolon {
+                        statements.push(token);
+                        nodes.push(self.parse(statements.clone()));
+                        statements.clear();
+                        break;
+                    }
+
+                    statements.push(token);
+
+                    pos += 1;
+                }
             } else if token == &Token::If || token == &Token::Loop {
                 let mut depth = 0;
                 loop {
@@ -191,6 +212,26 @@ impl Parser {
             }
 
             AstNode::Loop(self.match_tokens(statements))
+        } else if let Token::FunctionCall(ident) = token {
+            let lparen = *stream.next().unwrap();
+            if lparen != &Token::LParen {
+                panic!("expected ( found {lparen}")
+            };
+
+            let tokens = stream.map(|f| f.to_owned()).collect::<Vec<_>>();
+            let mut params = vec![];
+
+            for token in tokens {
+                if token == &Token::RParen {
+                    break;
+                }
+
+                let (data, _) = self.pratt_parser(vec![token].into_iter().peekable(), 0);
+
+                params.push(data);
+            }
+
+            AstNode::FunctionCall(ident.to_string(), params)
         } else {
             unimplemented!("token {token} somwhow reached parser match")
         };

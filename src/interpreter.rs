@@ -3,6 +3,7 @@ use std::{collections::HashMap, process};
 use crate::{
     ast::{AstNode, Expression},
     datatype::Data,
+    globals::Globals,
     token::Token,
 };
 
@@ -71,9 +72,20 @@ impl Interpreter {
                     self.match_node(stream.next().unwrap());
                 }
             }
+            AstNode::FunctionCall(name, params) => {
+                let mut args = vec![];
+
+                for param in params {
+                    args.push(self.parse_expression(param))
+                }
+
+                if Globals::_has(&name) {
+                    Globals::call(&name, args)
+                }
+            }
             AstNode::Break => {
                 self.stop = true;
-            },
+            }
             AstNode::Return => todo!(),
             AstNode::Exit => process::exit(0),
         }

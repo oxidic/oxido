@@ -60,17 +60,17 @@ impl<'a> Lexer<'a> {
                         continue;
                     }
 
+                    if !ch.unwrap().chars().next().unwrap().is_alphabetic() {
+                        self.at -= 1;
+                        break;
+                    }
+
                     let ch = if ch.unwrap().is_empty() {
                         stream.next();
                         continue;
                     } else {
                         stream.next().unwrap().chars().next().unwrap()
                     };
-
-                    if !ch.is_alphabetic() {
-                        self.at -= 1;
-                        break;
-                    }
 
                     token.push(ch);
                 }
@@ -273,10 +273,19 @@ impl<'a> Lexer<'a> {
                             .any(|x| x)
                         {
                             Token::Integer(token.parse::<i64>().unwrap())
-                        } else if self.tokens.last().unwrap() == &Token::Fn {
+                        } else if self.tokens.last().is_some()
+                            && self.tokens.last().unwrap() == &Token::Fn
+                        {
                             Token::FunctionName(token)
                         } else {
-                            Token::Identifier(token)
+                            let mut cloned_stream = stream.clone();
+                            if cloned_stream.peek().is_some()
+                                && cloned_stream.next().unwrap().starts_with('(')
+                            {
+                                Token::FunctionCall(token)
+                            } else {
+                                Token::Identifier(token)
+                            }
                         }
                     }
                 })

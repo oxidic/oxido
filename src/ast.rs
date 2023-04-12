@@ -1,10 +1,11 @@
-use crate::token::Token;
+use crate::{token::Token};
 
 #[derive(Clone, Debug)]
 pub enum AstNode {
     Assignment(String, Expression),
     If(Expression, Vec<AstNode>),
     Loop(Vec<AstNode>),
+    FunctionCall(String, Vec<Expression>),
     Break,
     Return,
     Exit
