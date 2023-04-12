@@ -1,8 +1,9 @@
-let a = 5;
+let a = 0;
 
-if a < 15 {
-    if a < 10 {
-        a = a - 5;
+loop {
+    a = a + 1;
+
+    if a == 10 {
+        break;
     }
-    a = a - 10;
 }

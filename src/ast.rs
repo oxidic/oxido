@@ -5,6 +5,9 @@ pub enum AstNode {
     Assignment(String, Expression),
     If(Expression, Vec<AstNode>),
     Loop(Vec<AstNode>),
+    Break,
+    Return,
+    Exit
 }
 
 #[derive(Clone, Debug)]

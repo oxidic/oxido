@@ -59,7 +59,28 @@ impl Parser {
 
                     pos += 1;
                 }
-            } else if token == &Token::If {
+            } else if let Token::Identifier(_) = token {
+                loop {
+                    let token = tokens.get(pos);
+
+                    if token == None {
+                        break;
+                    }
+
+                    let token = token.unwrap();
+
+                    if token == &Token::Semicolon {
+                        statements.push(token);
+                        nodes.push(self.parse(statements.clone()));
+                        statements.clear();
+                        break;
+                    }
+
+                    statements.push(token);
+
+                    pos += 1;
+                }
+            } else if token == &Token::If || token == &Token::Loop {
                 let mut depth = 0;
                 loop {
                     let token = tokens.get(pos);
@@ -74,7 +95,6 @@ impl Parser {
                         depth -= 1;
                         if depth == 0 {
                             statements.push(token);
-                            println!("{statements:?}");
                             nodes.push(self.parse(statements.clone()));
                             statements.clear();
                             break;
@@ -88,31 +108,14 @@ impl Parser {
 
                     pos += 1;
                 }
-            } else if let Token::Identifier(_) = token {
-                loop {
-                    let token = tokens.get(pos);
-
-                    if token == None {
-                        break;
-                    }
-
-                    let token = token.unwrap();
-
-                    if token == &Token::Semicolon {
-                        statements.push(token);
-
-                        println!("{statements:?}");
-                        nodes.push(self.parse(statements.clone()));
-                        statements.clear();
-                        break;
-                    }
-
-                    statements.push(token);
-
-                    pos += 1;
-                }
             } else {
-                println!("{token} not matched")
+                match token {
+                    Token::Break => nodes.push(AstNode::Break),
+                    Token::Return => nodes.push(AstNode::Return),
+                    Token::Exit => nodes.push(AstNode::Exit),
+                    // TODO: Handle none case
+                    _ => {}
+                }
             }
 
             statements.clear();
@@ -146,6 +149,21 @@ impl Parser {
             } else {
                 panic!("unexpected token {token} after let")
             }
+        } else if let Token::Identifier(ident) = token {
+            let equal = *stream.next().unwrap();
+            if equal != &Token::Equal {
+                panic!("expected equal sign, found {equal}")
+            };
+
+            let mut tokens = stream.map(|f| f.to_owned()).collect::<Vec<_>>();
+
+            if *tokens.pop().unwrap() != Token::Semicolon {
+                panic!("expected semicolon")
+            }
+
+            let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
+
+            AstNode::Assignment(ident.to_string(), expression)
         } else if token == &Token::If {
             let mut tokens = vec![];
             let mut statements = vec![];
@@ -165,21 +183,14 @@ impl Parser {
             let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
 
             AstNode::If(expression, self.match_tokens(statements))
-        } else if let Token::Identifier(ident) = token {
-            let equal = *stream.next().unwrap();
-            if equal != &Token::Equal {
-                panic!("expected equal sign, found {equal}")
-            };
+        } else if token == &Token::Loop {
+            let mut statements = vec![];
 
-            let mut tokens = stream.map(|f| f.to_owned()).collect::<Vec<_>>();
-
-            if *tokens.pop().unwrap() != Token::Semicolon {
-                panic!("expected semicolon")
+            for token in stream {
+                statements.push((*token).to_owned());
             }
 
-            let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
-
-            AstNode::Assignment(ident.to_string(), expression)
+            AstNode::Loop(self.match_tokens(statements))
         } else {
             unimplemented!("token {token} somwhow reached parser match")
         };

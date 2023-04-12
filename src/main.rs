@@ -6,6 +6,8 @@ mod ast;
 mod lexer;
 mod parser;
 mod token;
+mod interpreter;
+mod datatype;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -46,14 +48,17 @@ fn run(mut file: String, debug: bool, no_run: bool) {
         println!("LEXER: {tokens:?}\n");
     }
 
-    if no_run {
-        return;
-    }
-
     let mut parser = parser::Parser::new(tokens.to_vec());
     let ast = parser.run();
 
     if debug {
         println!("AST: {ast:?}\n");
     }
+
+    if no_run {
+        return;
+    }
+
+    let mut interpreter = interpreter::Interpreter::new(ast.to_vec());
+    interpreter.run();
 }
