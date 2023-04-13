@@ -101,7 +101,7 @@ impl Parser {
 
                     pos += 1;
                 }
-            } else if token == &Token::If || token == &Token::Loop {
+            } else if token == &Token::If || token == &Token::Loop || token == &Token::Fn {
                 let mut depth = 0;
                 loop {
                     let token = tokens.get(pos);
@@ -230,7 +230,6 @@ impl Parser {
                     break;
                 }
 
-
                 if token == &Token::Comma {
                     let (data, _) = self.pratt_parser(expression.clone().into_iter().peekable(), 0);
 
@@ -244,6 +243,54 @@ impl Parser {
             }
 
             AstNode::FunctionCall(ident.to_string(), params)
+        } else if token == &Token::Fn {
+            if let Token::FunctionName(name) = *stream.next().unwrap() {
+                let mut params = vec![];
+
+                loop {
+                    let token = stream.peek();
+
+                    if token == None {
+                        break;
+                    }
+
+                    let token = *stream.next().unwrap();
+
+                    if token == &Token::RParen {
+                        break;
+                    }
+
+                    if token == &Token::Comma {
+                        continue;
+                    }
+
+                    if let Token::Identifier(name) = token {
+                        params.push(name.to_string());
+                    }
+                }
+
+                let mut statements = vec![];
+
+                loop {
+                    let token = stream.peek();
+
+                    if token == None {
+                        break;
+                    }
+
+                    let token = *stream.next().unwrap();
+
+                    statements.push((*token).to_owned());
+                }
+
+                AstNode::FunctionDeclaration(
+                    name.to_string(),
+                    params,
+                    self.match_tokens(statements),
+                )
+            } else {
+                panic!("expected function name")
+            }
         } else {
             unimplemented!("token {token} somwhow reached parser match")
         };

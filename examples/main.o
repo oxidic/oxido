@@ -1,3 +1,5 @@
-let a = "Hello world!";
+fn message(text) {
+    println(text);
+}
 
-println(a, 6);
+message("Hello world");

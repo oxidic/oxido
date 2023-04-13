@@ -6,6 +6,7 @@ pub enum AstNode {
     If(Expression, Vec<AstNode>),
     Loop(Vec<AstNode>),
     FunctionCall(String, Vec<Expression>),
+    FunctionDeclaration(String, Vec<String>, Vec<AstNode>),
     Break,
     Return,
     Exit

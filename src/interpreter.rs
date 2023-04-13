@@ -2,7 +2,7 @@ use std::{collections::HashMap, process};
 
 use crate::{
     ast::{AstNode, Expression},
-    datatype::Data,
+    datatype::{Data, Function},
     globals::Globals,
     token::Token,
 };
@@ -11,6 +11,7 @@ pub struct Interpreter {
     ast: Vec<AstNode>,
     stop: bool,
     variables: HashMap<String, Data>,
+    functions: HashMap<String, Function>,
 }
 
 impl Interpreter {
@@ -19,6 +20,7 @@ impl Interpreter {
             ast,
             stop: false,
             variables: HashMap::new(),
+            functions: HashMap::new(),
         }
     }
 
@@ -81,7 +83,32 @@ impl Interpreter {
 
                 if Globals::_has(&name) {
                     Globals::call(&name, args)
+                } else if self.functions.contains_key(&name) {
+                    let function = self.functions.get(&name).unwrap().to_owned();
+
+                    if args.len() != function.params.len() {
+                        panic!("not enough args passed")
+                    }
+
+                    for (i, arg) in args.iter().enumerate() {
+                        let param = function.params.get(i).unwrap();
+
+                        self.variables.insert(param.to_string(), arg.to_owned());
+                    }
+
+                    let mut stream = function.statements.into_iter().peekable();
+                    loop {
+                        if stream.peek().is_none() {
+                            break;
+                        }
+
+                        self.match_node(stream.next().unwrap());
+                    }
                 }
+            }
+            AstNode::FunctionDeclaration(name, params, statements) => {
+                self.functions
+                    .insert(name.clone(), Function::init(name, params, statements));
             }
             AstNode::Break => {
                 self.stop = true;
