@@ -20,8 +20,7 @@ impl Globals {
     }
 
     pub fn println(data: Vec<Data>) {
-        Globals::print(data);
-        Globals::print(vec![Data::String("\n".to_string())])
+        print::println(data);
     }
 }
 
@@ -34,6 +33,16 @@ mod print {
                 Data::Integer(i) => print!("{i}"),
                 Data::Bool(b) => print!("{b}"),
                 Data::String(s) => print!("{s}"),
+            }
+        }
+    }
+
+    pub fn println(datas: Vec<Data>) {
+        for data in datas {
+            match data {
+                Data::Integer(i) => println!("{i}"),
+                Data::Bool(b) => println!("{b}"),
+                Data::String(s) => println!("{s}"),
             }
         }
     }

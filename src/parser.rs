@@ -220,15 +220,27 @@ impl Parser {
 
             let tokens = stream.map(|f| f.to_owned()).collect::<Vec<_>>();
             let mut params = vec![];
+            let mut expression = vec![];
 
             for token in tokens {
                 if token == &Token::RParen {
+                    let (data, _) = self.pratt_parser(expression.clone().into_iter().peekable(), 0);
+
+                    params.push(data);
                     break;
                 }
 
-                let (data, _) = self.pratt_parser(vec![token].into_iter().peekable(), 0);
 
-                params.push(data);
+                if token == &Token::Comma {
+                    let (data, _) = self.pratt_parser(expression.clone().into_iter().peekable(), 0);
+
+                    params.push(data);
+
+                    expression.clear();
+                    continue;
+                }
+
+                expression.push(token);
             }
 
             AstNode::FunctionCall(ident.to_string(), params)
