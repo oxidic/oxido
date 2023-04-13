@@ -88,6 +88,7 @@ impl<'a> Lexer<'a> {
                     }
 
                     if ch.unwrap().starts_with('\"') {
+                        stream.next();
                         break;
                     }
 
@@ -100,6 +101,8 @@ impl<'a> Lexer<'a> {
 
                     token.push(ch);
                 }
+                self.tokens.push(Token::String(token));
+                continue;
             } else if ch.is_numeric() {
                 token.push(ch);
                 loop {
@@ -128,6 +131,9 @@ impl<'a> Lexer<'a> {
 
                     token.push(ch);
                 }
+                self.tokens
+                    .push(Token::Integer(token.parse::<i64>().unwrap()));
+                continue;
             } else if ['+', '-', '*', '/', '^', '!', '=', '>', '<'].contains(&ch) {
                 self.tokens.push(match ch {
                     '+' => Token::Addition,
@@ -265,16 +271,7 @@ impl<'a> Lexer<'a> {
                     "true" => Token::Bool(true),
                     "false" => Token::Bool(false),
                     _ => {
-                        if token.starts_with('"') {
-                            Token::String(token)
-                        } else if token
-                            .split("")
-                            .map(|f| f.chars().next().unwrap_or(' ').is_numeric())
-                            .any(|x| x)
-                        {
-                            Token::Integer(token.parse::<i64>().unwrap())
-                        } else if self.tokens.last().is_some()
-                            && self.tokens.last().unwrap() == &Token::Fn
+                        if self.tokens.last().is_some() && self.tokens.last().unwrap() == &Token::Fn
                         {
                             Token::FunctionName(token)
                         } else {
