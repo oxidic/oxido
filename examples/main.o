@@ -1,5 +1,24 @@
-fn message(text) {
-    println(text);
-}
+let i = 1;
+let j = 1;
 
-message("Hello world");
+loop {
+    if i > 5 {
+        break;
+    }
+
+    j = 1;
+
+    loop {
+        if j > i {
+            break;
+        }
+
+        print(j);
+
+        j = j + 1;
+    }
+    
+    println("");
+
+    i = i + 1;
+}

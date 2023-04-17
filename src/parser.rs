@@ -32,7 +32,7 @@ impl Parser {
         loop {
             let token = tokens.get(pos);
 
-            if token == None {
+            if token.is_none() {
                 break;
             }
 
@@ -42,7 +42,7 @@ impl Parser {
                 loop {
                     let token = tokens.get(pos);
 
-                    if token == None {
+                    if token.is_none() {
                         break;
                     }
 
@@ -63,7 +63,7 @@ impl Parser {
                 loop {
                     let token = tokens.get(pos);
 
-                    if token == None {
+                    if token.is_none() {
                         break;
                     }
 
@@ -84,7 +84,7 @@ impl Parser {
                 loop {
                     let token = tokens.get(pos);
 
-                    if token == None {
+                    if token.is_none() {
                         break;
                     }
 
@@ -106,7 +106,7 @@ impl Parser {
                 loop {
                     let token = tokens.get(pos);
 
-                    if token == None {
+                    if token.is_none() {
                         break;
                     }
 
@@ -250,7 +250,7 @@ impl Parser {
                 loop {
                     let token = stream.peek();
 
-                    if token == None {
+                    if token.is_none() {
                         break;
                     }
 
@@ -274,7 +274,7 @@ impl Parser {
                 loop {
                     let token = stream.peek();
 
-                    if token == None {
+                    if token.is_none() {
                         break;
                     }
 
@@ -303,7 +303,7 @@ impl Parser {
         mut lexer: Peekable<IntoIter<&'a Token>>,
         prec: u16,
     ) -> (Expression, Peekable<IntoIter<&'a Token>>) {
-        if lexer.clone().next() == None {
+        if lexer.clone().next().is_none() {
             return (Expression::String(String::new()), lexer);
         }
         let token = lexer.next().unwrap();
@@ -338,7 +338,7 @@ impl Parser {
             let mut lex = lexer.clone();
             let op = lex.peek();
 
-            if op == None || op == Some(&&Token::RParen) {
+            if op.is_none() || op == Some(&&Token::RParen) {
                 break;
             }
 

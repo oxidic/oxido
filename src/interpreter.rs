@@ -36,6 +36,9 @@ impl Interpreter {
     }
 
     pub fn match_node(&mut self, node: AstNode) {
+        if self.stop {
+            return
+        }
         match node {
             AstNode::Assignment(ident, expression) => {
                 self.variables

@@ -1,14 +1,14 @@
-use clap::Parser;
 use lexer::Lexer;
 use std::fs;
+use clap::Parser;
 
 mod ast;
+mod datatype;
+mod globals;
+mod interpreter;
 mod lexer;
 mod parser;
 mod token;
-mod interpreter;
-mod datatype;
-mod globals;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -25,14 +25,15 @@ struct Args {
     input: String,
 }
 
+
 fn main() {
     let args = Args::parse();
     let filename = String::from(&args.input);
 
-    run(filename, args.debug, args.no_run);
+    readfile(filename, args.debug, args.no_run);
 }
 
-fn run(mut file: String, debug: bool, no_run: bool) {
+fn readfile(mut file: String, debug: bool, no_run: bool) {
     if fs::metadata(&file).unwrap().is_dir() {
         file = file.to_owned() + "/main.o";
     }
@@ -42,6 +43,10 @@ fn run(mut file: String, debug: bool, no_run: bool) {
         Err(_) => String::new(),
     };
 
+    run(contents, debug, no_run)
+}
+
+pub fn run(contents: String, debug: bool, no_run: bool) {
     let mut lexer = Lexer::new(&contents);
     let tokens = lexer.run();
 

@@ -9,4 +9,3 @@ opt-level = "z"
 
 [dependencies]
 clap = { version = "3.1.18", features = ["derive"] }
-itertools = "0.10.5"
