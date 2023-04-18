@@ -9,6 +9,7 @@ mod interpreter;
 mod lexer;
 mod parser;
 mod token;
+mod error;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -43,18 +44,18 @@ fn readfile(mut file: String, debug: bool, no_run: bool) {
         Err(_) => String::new(),
     };
 
-    run(contents, debug, no_run)
+    run(file, contents, debug, no_run)
 }
 
-pub fn run(contents: String, debug: bool, no_run: bool) {
-    let mut lexer = Lexer::new(&contents);
+pub fn run(name: String, contents: String, debug: bool, no_run: bool) {
+    let mut lexer = Lexer::new(&name ,&contents);
     let tokens = lexer.run();
 
     if debug {
         println!("LEXER: {tokens:?}\n");
     }
 
-    let mut parser = parser::Parser::new(tokens.to_vec());
+    let mut parser = parser::Parser::new(tokens.to_vec(), contents, name);
     let ast = parser.run();
 
     if debug {

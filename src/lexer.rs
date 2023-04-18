@@ -1,21 +1,23 @@
-use crate::token::Token;
+use crate::{error::error, token::Token};
 
 pub struct Lexer<'a> {
+    name: &'a str,
     file: &'a str,
     at: usize,
-    tokens: Vec<Token>,
+    tokens: Vec<(Token, usize)>,
 }
 
 impl<'a> Lexer<'a> {
-    pub fn new(file: &'a str) -> Self {
+    pub fn new(name: &'a str, file: &'a str) -> Self {
         Self {
+            name,
             file,
             at: 0,
             tokens: vec![],
         }
     }
 
-    pub fn run(&mut self) -> &Vec<Token> {
+    pub fn run(&mut self) -> &Vec<(Token, usize)> {
         let file = self.file.split("").collect::<Vec<&'a str>>();
 
         let mut stream = file.iter().peekable();
@@ -101,7 +103,9 @@ impl<'a> Lexer<'a> {
 
                     token.push(ch);
                 }
-                self.tokens.push(Token::String(token));
+                let t = Token::String(token);
+                let size = t.size();
+                self.tokens.push((t, self.at - size));
                 continue;
             } else if ch.is_numeric() {
                 token.push(ch);
@@ -132,10 +136,10 @@ impl<'a> Lexer<'a> {
                     token.push(ch);
                 }
                 self.tokens
-                    .push(Token::Integer(token.parse::<i64>().unwrap()));
+                    .push((Token::Integer(token.parse::<i64>().unwrap()), self.at));
                 continue;
             } else if ['+', '-', '*', '/', '^', '!', '=', '>', '<'].contains(&ch) {
-                self.tokens.push(match ch {
+                let t = match ch {
                     '+' => Token::Addition,
                     '-' => Token::Subtraction,
                     '*' => Token::Multiplication,
@@ -164,6 +168,7 @@ impl<'a> Lexer<'a> {
                             stream.next();
                             Token::IsNotEqual
                         } else {
+                            self.at -= 1;
                             Token::Not
                         }
                     }
@@ -190,6 +195,7 @@ impl<'a> Lexer<'a> {
                             stream.next();
                             Token::IsEqual
                         } else {
+                            self.at -= 1;
                             Token::Equal
                         }
                     }
@@ -216,6 +222,7 @@ impl<'a> Lexer<'a> {
                             stream.next();
                             Token::IsGreaterEqual
                         } else {
+                            self.at -= 1;
                             Token::IsGreater
                         }
                     }
@@ -242,25 +249,43 @@ impl<'a> Lexer<'a> {
                             stream.next();
                             Token::IsLesserEqual
                         } else {
+                            self.at -= 1;
                             Token::IsLesser
                         }
                     }
                     _ => unimplemented!(),
-                })
+                };
+                let size = t.size();
+                self.tokens.push((
+                    t,
+                    self.at - size,
+                ))
             } else {
-                self.tokens.push(match ch {
+                let t = match ch {
                     ';' => Token::Semicolon,
                     ',' => Token::Comma,
                     ')' => Token::RParen,
                     '(' => Token::LParen,
                     '}' => Token::RCurly,
                     '{' => Token::LCurly,
-                    _ => unimplemented!("token: {ch}"),
-                })
+                    _ => error(
+                        self.name,
+                        self.file,
+                        "0001",
+                        &format!("character `{ch}` was not expected here"),
+                        &format!("character `{ch}` was not expected here"),
+                        self.at..self.at+1
+                    ),
+                };
+                let size = t.size();
+                self.tokens.push((
+                    t,
+                    self.at - size,
+                ))
             }
 
             if !token.is_empty() {
-                self.tokens.push(match token.as_str() {
+                let t = match token.as_str() {
                     "let" => Token::Let,
                     "if" => Token::If,
                     "loop" => Token::Loop,
@@ -271,7 +296,8 @@ impl<'a> Lexer<'a> {
                     "true" => Token::Bool(true),
                     "false" => Token::Bool(false),
                     _ => {
-                        if self.tokens.last().is_some() && self.tokens.last().unwrap() == &Token::Fn
+                        if self.tokens.last().is_some()
+                            && self.tokens.last().unwrap().0 == Token::Fn
                         {
                             Token::FunctionName(token)
                         } else {
@@ -285,7 +311,12 @@ impl<'a> Lexer<'a> {
                             }
                         }
                     }
-                })
+                };
+                let size = t.size();
+                self.tokens.push((
+                    t,
+                    self.at - size,
+                ))
             }
         }
         &self.tokens
