@@ -8,15 +8,16 @@ pub enum AstNode {
     FunctionCall(String, Vec<Expression>),
     FunctionDeclaration(String, Vec<String>, Vec<(AstNode, usize)>),
     Break,
-    Return,
+    Return(Expression),
     Exit
 }
 
 #[derive(Clone, Debug)]
 pub enum Expression {
     BinaryOperation(Box<Expression>, Token, Box<Expression>),
-    String(String),
+    Str(String),
     Integer(i64),
     Bool(bool),
+    FunctionCall(String, Vec<Expression>),
     Identifier(String)
 }

@@ -1,38 +1,81 @@
 use crate::datatype::Data;
 
-pub struct Globals;
+pub struct StandardLibrary;
 
-impl Globals {
-    pub fn _has(x: &str) -> bool {
-        ["print", "println"].contains(&x)
+impl StandardLibrary {
+    pub fn contains(x: &str) -> bool {
+        ["print", "println", "read", "int", "bool", "str"].contains(&x)
     }
 
-    pub fn call(x: &str, params: Vec<Data>) {
+    pub fn call(x: &str, params: Vec<Data>) -> Option<Data> {
         match x {
-            "print" => Globals::print(params),
-            "println" => Globals::println(params),
-            _ => panic!("not a global function")
+            "print" => {
+                io::print(params);
+                None
+            }
+            "println" => {
+                io::println(params);
+                None
+            }
+            "read" => Some(io::read()),
+            "int" => Some(types::int(params.first().unwrap().to_owned())),
+            "bool" => Some(types::bool(params.first().unwrap().to_owned())),
+            "str" => Some(types::str(params.first().unwrap().to_owned())),
+            _ => panic!("not a global function"),
         }
-    }
-
-    pub fn print(data: Vec<Data>) {
-        print::print(data);
-    }
-
-    pub fn println(data: Vec<Data>) {
-        print::println(data);
     }
 }
 
-mod print {
+mod types {
     use crate::datatype::Data;
+
+    pub fn int(data: Data) -> Data {
+        match data {
+            Data::Integer(_) => data,
+            Data::Bool(b) => Data::Integer(b as i64),
+            Data::Str(s) => Data::Integer(s.parse::<i64>().unwrap()),
+        }
+    }
+
+    pub fn bool(data: Data) -> Data {
+        match data {
+            Data::Integer(i) => Data::Bool(i != 0),
+            Data::Bool(_) => data,
+            Data::Str(s) => Data::Bool(s.parse::<bool>().unwrap()),
+        }
+    }
+
+    pub fn str(data: Data) -> Data {
+        match data {
+            Data::Integer(i) => Data::Str(format!("{i}")),
+            Data::Bool(b) => Data::Str(format!("{b}")),
+            Data::Str(_) => data,
+        }
+    }
+}
+
+mod io {
+    use crate::datatype::Data;
+    use std::io::stdin;
+
+    pub fn read() -> Data {
+        let mut s = String::new();
+        stdin().read_line(&mut s).unwrap();
+        if let Some('\n') = s.chars().next_back() {
+            s.pop();
+        }
+        if let Some('\r') = s.chars().next_back() {
+            s.pop();
+        }
+        Data::Str(s)
+    }
 
     pub fn print(datas: Vec<Data>) {
         for data in datas {
             match data {
                 Data::Integer(i) => print!("{i}"),
                 Data::Bool(b) => print!("{b}"),
-                Data::String(s) => print!("{s}"),
+                Data::Str(s) => print!("{s}"),
             }
         }
     }
@@ -42,7 +85,7 @@ mod print {
             match data {
                 Data::Integer(i) => println!("{i}"),
                 Data::Bool(b) => println!("{b}"),
-                Data::String(s) => println!("{s}"),
+                Data::Str(s) => println!("{s}"),
             }
         }
     }

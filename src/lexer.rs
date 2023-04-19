@@ -104,7 +104,7 @@ impl<'a> Lexer<'a> {
 
                     token.push(ch);
                 }
-                let t = Token::String(token);
+                let t = Token::Str(token);
                 let size = t.size();
                 self.tokens.push((t, self.at - size));
                 continue;

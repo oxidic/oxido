@@ -137,7 +137,25 @@ impl Parser {
             } else {
                 match &token.0 {
                     Token::Break => nodes.push((AstNode::Break, token.1)),
-                    Token::Return => nodes.push((AstNode::Return, token.1)),
+                    Token::Return => loop {
+                        let token = tokens.get(pos);
+
+                        if token.is_none() {
+                            break;
+                        }
+
+                        let token = token.unwrap();
+
+                        if token.0 == Token::Semicolon {
+                            statements.push(token);
+                            nodes.push(self.parse(statements.clone()));
+                            break;
+                        }
+
+                        statements.push(token);
+
+                        pos += 1;
+                    },
                     Token::Exit => nodes.push((AstNode::Exit, token.1)),
                     Token::Semicolon => {}
                     t => {
@@ -382,6 +400,19 @@ impl Parser {
                     }
                 }
 
+                let t = &stream.next().unwrap();
+
+                if t.0 != Token::LCurly {
+                    error(
+                        &self.name,
+                        &self.file,
+                        "0001",
+                        &format!("expected `{{` found {}", t.0.as_string()),
+                        "use `{` here",
+                        t.1 - 1..t.1 + t.0.size() - 1,
+                    );
+                };
+
                 let mut statements = vec![];
 
                 loop {
@@ -395,6 +426,19 @@ impl Parser {
 
                     statements.push((*token).to_owned());
                 }
+
+                let t = statements.pop().unwrap();
+
+                if t.0 != Token::RCurly {
+                    error(
+                        &self.name,
+                        &self.file,
+                        "0001",
+                        &format!("expected `}}` found {}", t.0.as_string()),
+                        "use `}` here",
+                        t.1 - 1..t.1 + t.0.size() - 1,
+                    );
+                };
 
                 (
                     AstNode::FunctionDeclaration(
@@ -414,14 +458,35 @@ impl Parser {
                     t.1 - 1..t.1 + t.0.size() - 1,
                 );
             }
+        } else if token.0 == Token::Return {
+            let mut tokens = stream.collect::<Vec<_>>();
+
+            let t = tokens.pop().unwrap();
+
+            if t.0 != Token::Semicolon {
+                error(
+                    &self.name,
+                    &self.file,
+                    "0001",
+                    &format!("expected `;` found {}", t.0.as_string()),
+                    "use `;` here",
+                    t.1 - 1..t.1 + t.0.size() - 1,
+                );
+            }
+
+            let tokens = tokens.iter().map(|f| **f).collect::<Vec<_>>();
+
+            let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
+
+            (AstNode::Return(expression), token.1)
         } else {
             error(
                 &self.name,
                 &self.file,
                 "0001",
-                &format!("expected name of function found {}", token.0.as_string()),
-                "use function name here",
-                token.1..token.1 + token.0.size(),
+                &format!("{} was not expected", token.0.as_string()),
+                "did not expect this",
+                token.1 - 1..token.1 + token.0.size(),
             );
         };
 
@@ -434,7 +499,7 @@ impl Parser {
         prec: u16,
     ) -> (Expression, Peekable<IntoIter<&'a (Token, usize)>>) {
         if lexer.clone().next().is_none() {
-            return (Expression::String(String::new()), lexer);
+            return (Expression::Str(String::new()), lexer);
         }
         let token = &lexer.next().unwrap();
         let mut expr: Option<Expression> = None;
@@ -446,18 +511,82 @@ impl Parser {
             Token::Bool(bool) => {
                 expr = Some(Expression::Bool(*bool));
             }
-            Token::String(str) => {
-                expr = Some(Expression::String(str.to_string()));
+            Token::Str(str) => {
+                expr = Some(Expression::Str(str.to_string()));
             }
             Token::LParen => {
-				let exp;
+                let exp;
                 (exp, lexer) = self.pratt_parser(lexer, 0);
-				expr = Some(exp);
+                expr = Some(exp);
             }
             Token::Subtraction => {
                 if let Token::Integer(i) = token.0 {
                     expr = Some(Expression::Integer(-i));
                 }
+            }
+            Token::FunctionCall(f) => {
+                let t = &lexer.next().unwrap();
+                if t.0 != Token::LParen {
+                    error(
+                        &self.name,
+                        &self.file,
+                        "0001",
+                        &format!("expected `(` found {}", t.0.as_string()),
+                        "use `(` here",
+                        t.1 - 1..t.1 + t.0.size() - 1,
+                    );
+                };
+
+                let mut tokens = vec![];
+                let mut depth = 1;
+
+                loop {
+                    let t = lexer.next();
+
+                    if t.is_none() {
+                        break;
+                    }
+                    let t = t.unwrap();
+
+                    if t.0 == Token::LParen {
+                        depth += 1;
+                    } else if t.0 == Token::RParen {
+                        depth -= 1;
+                    }
+
+                    tokens.push(t);
+
+                    if depth == 0 {
+                        break;
+                    }
+                }
+
+                let mut params = vec![];
+                let mut expression: Vec<(Token, usize)> = vec![];
+
+                for token in tokens {
+                    if token.0 == Token::RParen {
+                        let lex = expression.iter().collect::<Vec<_>>().into_iter().peekable();
+                        let (data, _) = self.pratt_parser(lex, 0);
+
+                        params.push(data);
+                        break;
+                    }
+
+                    if token.0 == Token::Comma {
+                        let lex = expression.iter().collect::<Vec<_>>().into_iter().peekable();
+                        let (data, _) = self.pratt_parser(lex, 0);
+
+                        params.push(data);
+
+                        expression.clear();
+                        continue;
+                    }
+
+                    expression.push(token.to_owned());
+                }
+
+                expr = Some(Expression::FunctionCall(f.to_string(), params));
             }
             _ => {
                 if let Token::Integer(i) = token.0 {
@@ -484,7 +613,11 @@ impl Parser {
             lexer.next();
             let rhs;
             (rhs, lexer) = self.pratt_parser(lexer, self.infix_binding_power(op.unwrap()));
-            expr = Some(Expression::BinaryOperation(Box::new(expr.unwrap()), op.unwrap().0.clone(), Box::new(rhs)))
+            expr = Some(Expression::BinaryOperation(
+                Box::new(expr.unwrap()),
+                op.unwrap().0.clone(),
+                Box::new(rhs),
+            ))
         }
 
         if expr.is_none() {

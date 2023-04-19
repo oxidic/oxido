@@ -2,7 +2,7 @@ use crate::ast::AstNode;
 
 #[derive(Clone, Debug)]
 pub enum Data {
-    String(String),
+    Str(String),
     Integer(i64),
     Bool(bool),
 }
@@ -10,7 +10,7 @@ pub enum Data {
 impl Data {
     pub fn type_as_str(&self) -> &str {
         match self {
-            Data::String(_) => "String",
+            Data::Str(_) => "String",
             Data::Integer(_) => "int",
             Data::Bool(_) => "bool",
         }
