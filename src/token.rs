@@ -42,7 +42,7 @@ pub enum Token {
 }
 
 impl Token {
-    pub fn to_string(&self) -> String {
+    pub fn as_string(&self) -> String {
         match &self {
             Token::Let => String::from("let"),
             Token::If => String::from("if"),
@@ -85,6 +85,6 @@ impl Token {
     }
 
     pub fn size(&self) -> usize {
-        self.to_string().len()
+        self.as_string().len()
     }
 }

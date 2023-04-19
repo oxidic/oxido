@@ -7,15 +7,25 @@ pub enum Data {
     Bool(bool),
 }
 
+impl Data {
+    pub fn type_as_str(&self) -> &str {
+        match self {
+            Data::String(_) => "String",
+            Data::Integer(_) => "int",
+            Data::Bool(_) => "bool",
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Function {
     pub name: String,
     pub params: Vec<String>,
-    pub statements: Vec<AstNode>,
+    pub statements: Vec<(AstNode, usize)>,
 }
 
 impl Function {
-    pub fn init(name: String, params: Vec<String>, statements: Vec<AstNode>) -> Self {
+    pub fn init(name: String, params: Vec<String>, statements: Vec<(AstNode, usize)>) -> Self {
         Self {
             name,
             params,

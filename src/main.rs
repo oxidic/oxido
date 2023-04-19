@@ -55,7 +55,7 @@ pub fn run(name: String, contents: String, debug: bool, no_run: bool) {
         println!("LEXER: {tokens:?}\n");
     }
 
-    let mut parser = parser::Parser::new(tokens.to_vec(), contents, name);
+    let mut parser = parser::Parser::new(tokens.to_vec(), contents.clone(), name.clone());
     let ast = parser.run();
 
     if debug {
@@ -66,6 +66,6 @@ pub fn run(name: String, contents: String, debug: bool, no_run: bool) {
         return;
     }
 
-    let mut interpreter = interpreter::Interpreter::new(ast.to_vec());
+    let mut interpreter = interpreter::Interpreter::new(ast.to_vec(), contents, name);
     interpreter.run();
 }

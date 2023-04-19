@@ -90,6 +90,7 @@ impl<'a> Lexer<'a> {
                     }
 
                     if ch.unwrap().starts_with('\"') {
+                        self.at -= 1;
                         stream.next();
                         break;
                     }
@@ -135,8 +136,9 @@ impl<'a> Lexer<'a> {
 
                     token.push(ch);
                 }
-                self.tokens
-                    .push((Token::Integer(token.parse::<i64>().unwrap()), self.at));
+                let t = Token::Integer(token.parse::<i64>().unwrap());
+                let size = t.size();
+                self.tokens.push((t, self.at - size));
                 continue;
             } else if ['+', '-', '*', '/', '^', '!', '=', '>', '<'].contains(&ch) {
                 let t = match ch {
@@ -256,10 +258,7 @@ impl<'a> Lexer<'a> {
                     _ => unimplemented!(),
                 };
                 let size = t.size();
-                self.tokens.push((
-                    t,
-                    self.at - size,
-                ))
+                self.tokens.push((t, self.at - size))
             } else {
                 let t = match ch {
                     ';' => Token::Semicolon,
@@ -268,20 +267,20 @@ impl<'a> Lexer<'a> {
                     '(' => Token::LParen,
                     '}' => Token::RCurly,
                     '{' => Token::LCurly,
-                    _ => error(
-                        self.name,
-                        self.file,
-                        "0001",
-                        &format!("character `{ch}` was not expected here"),
-                        &format!("character `{ch}` was not expected here"),
-                        self.at..self.at+1
-                    ),
+                    _ => {
+                        self.at -= 2;
+                        error(
+                            self.name,
+                            self.file,
+                            "0001",
+                            &format!("character `{ch}` was not expected here"),
+                            &format!("character `{ch}` was not expected here"),
+                            self.at..self.at + 1,
+                        )
+                    }
                 };
                 let size = t.size();
-                self.tokens.push((
-                    t,
-                    self.at - size,
-                ))
+                self.tokens.push((t, self.at - size))
             }
 
             if !token.is_empty() {
@@ -313,10 +312,7 @@ impl<'a> Lexer<'a> {
                     }
                 };
                 let size = t.size();
-                self.tokens.push((
-                    t,
-                    self.at - size,
-                ))
+                self.tokens.push((t, self.at - size))
             }
         }
         &self.tokens

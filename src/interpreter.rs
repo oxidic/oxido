@@ -3,20 +3,25 @@ use std::{collections::HashMap, process};
 use crate::{
     ast::{AstNode, Expression},
     datatype::{Data, Function},
+    error::error,
     globals::Globals,
     token::Token,
 };
 
 pub struct Interpreter {
-    ast: Vec<AstNode>,
+    name: String,
+    file: String,
+    ast: Vec<(AstNode, usize)>,
     stop: bool,
     variables: HashMap<String, Data>,
     functions: HashMap<String, Function>,
 }
 
 impl Interpreter {
-    pub fn new(ast: Vec<AstNode>) -> Self {
+    pub fn new(ast: Vec<(AstNode, usize)>, file: String, name: String) -> Self {
         Self {
+            name,
+            file,
             ast,
             stop: false,
             variables: HashMap::new(),
@@ -35,17 +40,17 @@ impl Interpreter {
         }
     }
 
-    pub fn match_node(&mut self, node: AstNode) {
+    pub fn match_node(&mut self, node: (AstNode, usize)) {
         if self.stop {
-            return
+            return;
         }
-        match node {
+        match node.0 {
             AstNode::Assignment(ident, expression) => {
                 self.variables
-                    .insert(ident, self.parse_expression(expression));
+                    .insert(ident, self.parse_expression(expression, node.1));
             }
             AstNode::If(condition, statements) => {
-                let data = self.parse_expression(condition);
+                let data = self.parse_expression(condition, node.1);
 
                 if let Data::Bool(bool) = data {
                     if bool {
@@ -59,7 +64,18 @@ impl Interpreter {
                         }
                     }
                 } else {
-                    panic!("expected bool data type")
+                    println!("{}", node.1);
+                    error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `bool` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `bool` was expected",
+                        node.1..node.1,
+                    );
                 }
             }
             AstNode::Loop(statements) => {
@@ -81,7 +97,7 @@ impl Interpreter {
                 let mut args = vec![];
 
                 for param in params {
-                    args.push(self.parse_expression(param))
+                    args.push(self.parse_expression(param, node.1))
                 }
 
                 if Globals::_has(&name) {
@@ -90,7 +106,18 @@ impl Interpreter {
                     let function = self.functions.get(&name).unwrap().to_owned();
 
                     if args.len() != function.params.len() {
-                        panic!("not enough args passed")
+                        error(
+                            &self.name,
+                            &self.file,
+                            "0002",
+                            "not enough arguments were passed",
+                            &format!(
+                                "{} arguments were expected but {} were passed",
+                                function.params.len(),
+                                args.len()
+                            ),
+                            node.1..node.1,
+                        );
                     }
 
                     for (i, arg) in args.iter().enumerate() {
@@ -121,166 +148,453 @@ impl Interpreter {
         }
     }
 
-    pub fn parse_expression(&self, expr: Expression) -> Data {
+    pub fn parse_expression(&self, expr: Expression, pos: usize) -> Data {
         match expr {
             Expression::BinaryOperation(lhs, op, rhs) => {
-                self.parse_binary_operation(*lhs, op, *rhs)
+                self.parse_binary_operation(*lhs, op, *rhs, pos)
             }
             Expression::Integer(i) => Data::Integer(i),
             Expression::Identifier(i) => self.variables.get(&i).unwrap().to_owned(),
             Expression::Bool(b) => Data::Bool(b),
             Expression::String(s) => Data::String(s),
-            Expression::Unexpected => unimplemented!(),
         }
     }
 
-    pub fn parse_binary_operation(&self, lhs: Expression, op: Token, rhs: Expression) -> Data {
+    pub fn parse_binary_operation(&self, lhs: Expression, op: Token, rhs: Expression, pos: usize) -> Data {
         let lhs = match lhs {
             Expression::BinaryOperation(lhs, op, rhs) => {
-                self.parse_binary_operation(*lhs, op, *rhs)
+                self.parse_binary_operation(*lhs, op, *rhs, pos)
             }
             Expression::Integer(i) => Data::Integer(i),
             Expression::Identifier(i) => self.variables.get(&i).unwrap().to_owned(),
             Expression::String(s) => Data::String(s),
             Expression::Bool(b) => Data::Bool(b),
-            Expression::Unexpected => unimplemented!(),
         };
         let operator = op;
         let rhs = match rhs {
             Expression::BinaryOperation(lhs, op, rhs) => {
-                self.parse_binary_operation(*lhs, op, *rhs)
+                self.parse_binary_operation(*lhs, op, *rhs, pos)
             }
             Expression::Integer(i) => Data::Integer(i),
             Expression::Identifier(i) => self.variables.get(&i).unwrap().to_owned(),
             Expression::String(s) => Data::String(s),
             Expression::Bool(b) => Data::Bool(b),
-            Expression::Unexpected => unimplemented!(),
         };
         match operator {
             Token::Addition => match lhs {
                 Data::String(str) => match rhs {
                     Data::String(s) => Data::String(str + &s),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `String` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `String` was expected",
+                        pos..pos,
+                    ),
                 },
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Integer(n + m),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `int` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `int` was expected",
+                        pos..pos,
+                    ),
                 },
-                _ => unimplemented!(),
+                data => error(
+                    &self.name,
+                    &self.file,
+                    "0002",
+                    &format!(
+                        "mismatched data types, expected `String` or `int` found {}",
+                        data.type_as_str()
+                    ),
+                    "a value of type `String` or `int` was expected",
+                    pos..pos,
+                ),
             },
             Token::Subtraction => match lhs {
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Integer(n - m),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `int` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `int` was expected",
+                        pos..pos,
+                    ),
                 },
-                _ => unimplemented!(),
+                data => error(
+                    &self.name,
+                    &self.file,
+                    "0002",
+                    &format!(
+                        "mismatched data types, expected `int` found {}",
+                        data.type_as_str()
+                    ),
+                    "a value of type `int` was expected",
+                    pos..pos,
+                ),
             },
             Token::Multiplication => match lhs {
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Integer(n * m),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `int` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `int` was expected",
+                        pos..pos,
+                    ),
                 },
-                _ => unimplemented!(),
+                data => error(
+                    &self.name,
+                    &self.file,
+                    "0002",
+                    &format!(
+                        "mismatched data types, expected `int` found {}",
+                        data.type_as_str()
+                    ),
+                    "a value of type `int` was expected",
+                    pos..pos,
+                ),
             },
             Token::Division => match lhs {
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Integer(n / m),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `int` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `int` was expected",
+                        pos..pos,
+                    ),
                 },
-                _ => unimplemented!(),
+                data => error(
+                    &self.name,
+                    &self.file,
+                    "0002",
+                    &format!(
+                        "mismatched data types, expected `int` found {}",
+                        data.type_as_str()
+                    ),
+                    "a value of type `int` was expected",
+                    pos..pos,
+                ),
             },
             Token::Power => match lhs {
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Integer(n.pow(m as u32)),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `int` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `int` was expected",
+                        pos..pos,
+                    ),
                 },
-                _ => unimplemented!(),
+                data => error(
+                    &self.name,
+                    &self.file,
+                    "0002",
+                    &format!(
+                        "mismatched data types, expected `int` found {}",
+                        data.type_as_str()
+                    ),
+                    "a value of type `int` was expected",
+                    pos..pos,
+                ),
             },
             Token::IsEqual => match lhs {
                 Data::String(str) => match rhs {
                     Data::String(s) => Data::Bool(str == s),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `String` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `String` was expected",
+                        pos..pos,
+                    ),
                 },
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Bool(n == m),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `int` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `int` was expected",
+                        pos..pos,
+                    ),
                 },
                 Data::Bool(b) => match rhs {
                     Data::Bool(d) => Data::Bool(b == d),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `bool` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `bool` was expected",
+                        pos..pos,
+                    ),
                 },
             },
             Token::IsNotEqual => match lhs {
                 Data::String(str) => match rhs {
                     Data::String(s) => Data::Bool(str != s),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `String` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `String` was expected",
+                        pos..pos,
+                    ),
                 },
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Bool(n != m),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `int` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `int` was expected",
+                        pos..pos,
+                    ),
                 },
                 Data::Bool(b) => match rhs {
                     Data::Bool(d) => Data::Bool(b != d),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `bool` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `bool` was expected",
+                        pos..pos,
+                    ),
                 },
             },
             Token::IsGreater => match lhs {
                 Data::String(str) => match rhs {
                     Data::String(s) => Data::Bool(str > s),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `String` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `String` was expected",
+                        pos..pos,
+                    ),
                 },
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Bool(n > m),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `int` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `int` was expected",
+                        pos..pos,
+                    ),
                 },
                 Data::Bool(b) => match rhs {
                     Data::Bool(d) => Data::Bool(b & !d),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `bool` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `bool` was expected",
+                        pos..pos,
+                    ),
                 },
             },
             Token::IsLesser => match lhs {
                 Data::String(str) => match rhs {
                     Data::String(s) => Data::Bool(str < s),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `String` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `String` was expected",
+                        pos..pos,
+                    ),
                 },
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Bool(n < m),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `int` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `int` was expected",
+                        pos..pos,
+                    ),
                 },
                 Data::Bool(b) => match rhs {
                     Data::Bool(d) => Data::Bool(!b & d),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `bool` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `bool` was expected",
+                        pos..pos,
+                    ),
                 },
             },
             Token::IsGreaterEqual => match lhs {
                 Data::String(str) => match rhs {
                     Data::String(s) => Data::Bool(str >= s),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `String` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `String` was expected",
+                        pos..pos,
+                    ),
                 },
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Bool(n >= m),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `int` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `int` was expected",
+                        pos..pos,
+                    ),
                 },
                 Data::Bool(b) => match rhs {
                     Data::Bool(d) => Data::Bool(b >= d),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `bool` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `bool` was expected",
+                        pos..pos,
+                    ),
                 },
             },
             Token::IsLesserEqual => match lhs {
                 Data::String(str) => match rhs {
                     Data::String(s) => Data::Bool(str <= s),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `String` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `String` was expected",
+                        pos..pos,
+                    ),
                 },
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Bool(n <= m),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `int` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `int` was expected",
+                        pos..pos,
+                    ),
                 },
                 Data::Bool(b) => match rhs {
                     Data::Bool(d) => Data::Bool(b <= d),
-                    _ => unimplemented!(),
+                    data => error(
+                        &self.name,
+                        &self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `bool` found {}",
+                            data.type_as_str()
+                        ),
+                        "a value of type `bool` was expected",
+                        pos..pos,
+                    ),
                 },
             },
-            _ => unimplemented!(),
+            _ => unreachable!(),
         }
     }
 }
