@@ -63,45 +63,49 @@ Conventionally, base Oxido files are named `main.o`.
 
 * Integer: Integers (no fractions), passing the regex `[0-9]+`.
 
+* Bool: `true` or `false`
+
 ### Variables
 
 Variables are declared by the `let` keyword, followed by a space and the identifier, which must pass the regex `[A-Za-z]+`, followed by an equals sign and the value which must be a single string or an integer or an expression of integers, or a variable itself.
 
 For example:
 
-```ox
+```rs
 let a = "Hi mom!";
 let a = 5;
 let a = 5 * 5;
+let f = factorial(5);
 ```
 
 ### Reassignments
 
 Reassignments are done stating the identifier, which must pass the regex `[A-Za-z]+`, followed by an equals sign and the value which must be a single string or an integer or an expression of integers, or a variable itself.
 
-```ox
+```rs
 let a = 0;
 a = "Hi mom!";
 a = 5;
 a = 5 * 5;
+a = factorial(5);
 ```
 
 ### Printing
 
 The `print` keyword can be used to print variables, expressions and strings to stdout, the value must be inside two parentheses.
 
-```ox
+```rs
 print(a);
 print(5);
 print(5 * 5);
-print("Hello world");
+print("Hi mom!");
 ```
 
 ### If statements
 
 If statements check whether the given condition is true or not using the `==` or `<` or `>` operator. The `==` is applicable on strings and integers both, while `<` or `>` can only be used on integers. The condition must be followed after the code to be executed in the case the condition is true in curly braces `{}`.
 
-```ox
+```rs
 if a == 5 {
     print(a);
 }
@@ -111,7 +115,7 @@ if a == 5 {
 
 Loop statements repeat given conditions until `break` is called.The conditions to be executed in the loop must be followed after the `loop` keyword in `{}`.
 
-```ox
+```rs
 let b = 0;
 
 loop {
@@ -130,7 +134,7 @@ loop {
 
 Funcitons store the given conditions until they are called. They are declared with the name of the function, the name must be a valid identifier, followed by args, seperated by commas in `()` and the statement in `{}`.
 
-```ox
+```rs
 let text = "Hi mom!";
 
 fn message(text) {
@@ -144,8 +148,8 @@ message(text);
 
 The `exit` keyword can be used to exit the program with the specified exit code
 
-```ox
-let code = 1;
+```rs
+print("Hi mom!")
 
-exit(code);
+exit
 ```

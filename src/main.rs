@@ -68,4 +68,6 @@ pub fn run(name: String, contents: String, debug: bool, no_run: bool) {
 
     let mut interpreter = interpreter::Interpreter::new(ast.to_vec(), contents, name);
     interpreter.run();
+
+    println!();
 }
