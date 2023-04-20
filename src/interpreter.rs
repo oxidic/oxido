@@ -51,6 +51,20 @@ impl Interpreter {
                 let data = self.parse_expression(expression, node.1);
                 self.variables.insert(ident, data);
             }
+            AstNode::ReAssignment(ident, expression) => {
+                if !self.variables.contains_key(&ident) {
+                    error(
+                        &self.name,
+                        &self.file,
+                        "0005",
+                        "token was not expected here",
+                        "unexpected token",
+                        node.1..node.1,
+                    );
+                }
+                let data = self.parse_expression(expression, node.1);
+                self.variables.insert(ident, data);
+            }
             AstNode::If(condition, statements) => {
                 let data = self.parse_expression(condition, node.1);
 
@@ -66,7 +80,6 @@ impl Interpreter {
                         }
                     }
                 } else {
-                    println!("{}", node.1);
                     error(
                         &self.name,
                         &self.file,
@@ -224,13 +237,13 @@ impl Interpreter {
                         );
                     }
 
+                    self.match_node(stream.next().unwrap());
+
                     if self.returned.is_some() {
                         let data = self.returned.clone().unwrap();
                         self.returned = None;
                         break data;
                     }
-
-                    self.match_node(stream.next().unwrap());
                 }
             }
         }
@@ -248,7 +261,19 @@ impl Interpreter {
                 self.parse_binary_operation(*lhs, op, *rhs, pos)
             }
             Expression::Integer(i) => Data::Integer(i),
-            Expression::Identifier(i) => self.variables.get(&i).unwrap().to_owned(),
+            Expression::Identifier(i) => {
+                if !self.variables.contains_key(&i) {
+                    error(
+                        &self.name,
+                        &self.file,
+                        "0006",
+                        "attempt to access value of undeclared variable",
+                        "declare the value of the variable before using it",
+                        pos..pos + i.len(),
+                    );
+                };
+                self.variables.get(&i).unwrap().to_owned()
+            }
             Expression::Str(s) => Data::Str(s),
             Expression::Bool(b) => Data::Bool(b),
             Expression::FunctionCall(f, args) => {

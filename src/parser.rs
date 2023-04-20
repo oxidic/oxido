@@ -237,8 +237,8 @@ impl Parser {
                     &self.name,
                     &self.file,
                     "0001",
-                    &format!("expected `=` found {}", t.0.as_string()),
-                    "use `=` here",
+                    &format!("unexpected punctuator {}", t.0.as_string()),
+                    "for declaring a value `=` should be used",
                     t.1 - 1..t.1 + t.0.size() - 1,
                 );
             };
@@ -262,7 +262,7 @@ impl Parser {
 
             let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
 
-            (AstNode::Assignment(ident.to_string(), expression), token.1)
+            (AstNode::ReAssignment(ident.to_string(), expression), token.1)
         } else if token.0 == Token::If {
             let mut tokens = vec![];
             let mut statements = vec![];
