@@ -18,7 +18,7 @@ loop {
         j = j + 1;
     }
     
-    println("");
+    println();
 
     i = i + 1;
 }

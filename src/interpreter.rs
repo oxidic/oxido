@@ -4,7 +4,7 @@ use crate::{
     ast::{AstNode, Expression},
     datatype::{Data, Function},
     error::error,
-    globals::StandardLibrary,
+    standardlibrary::StandardLibrary,
     token::Token,
 };
 

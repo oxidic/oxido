@@ -4,7 +4,7 @@ use clap::Parser;
 
 mod ast;
 mod datatype;
-mod globals;
+mod standardlibrary;
 mod interpreter;
 mod lexer;
 mod parser;

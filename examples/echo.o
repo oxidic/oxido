@@ -1,0 +1,3 @@
+let a = read();
+
+println(a);

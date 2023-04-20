@@ -262,7 +262,10 @@ impl Parser {
 
             let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
 
-            (AstNode::ReAssignment(ident.to_string(), expression), token.1)
+            (
+                AstNode::ReAssignment(ident.to_string(), expression),
+                token.1,
+            )
         } else if token.0 == Token::If {
             let mut tokens = vec![];
             let mut statements = vec![];
@@ -354,9 +357,12 @@ impl Parser {
 
             for token in tokens {
                 if token.0 == Token::RParen {
-                    let (data, _) = self.pratt_parser(expression.clone().into_iter().peekable(), 0);
+                    if !expression.is_empty() {
+                        let (data, _) =
+                            self.pratt_parser(expression.clone().into_iter().peekable(), 0);
 
-                    params.push(data);
+                        params.push(data);
+                    }
                     break;
                 }
 
@@ -566,10 +572,12 @@ impl Parser {
 
                 for token in tokens {
                     if token.0 == Token::RParen {
-                        let lex = expression.iter().collect::<Vec<_>>().into_iter().peekable();
-                        let (data, _) = self.pratt_parser(lex, 0);
+                        if !expression.is_empty() {
+                            let lex = expression.iter().collect::<Vec<_>>().into_iter().peekable();
+                            let (data, _) = self.pratt_parser(lex, 0);
 
-                        params.push(data);
+                            params.push(data);
+                        }
                         break;
                     }
 

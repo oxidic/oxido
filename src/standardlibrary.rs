@@ -81,12 +81,7 @@ mod io {
     }
 
     pub fn println(datas: Vec<Data>) {
-        for data in datas {
-            match data {
-                Data::Integer(i) => println!("{i}"),
-                Data::Bool(b) => println!("{b}"),
-                Data::Str(s) => println!("{s}"),
-            }
-        }
+        self::print(datas);
+        println!();
     }
 }
