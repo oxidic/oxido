@@ -1,4 +1,4 @@
-let s = read();
+let s = "10";
 
 let n = int(s);
 

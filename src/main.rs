@@ -1,15 +1,16 @@
+use clap::Parser;
 use lexer::Lexer;
 use std::fs;
-use clap::Parser;
+use std::time::Instant;
 
 mod ast;
 mod datatype;
-mod standardlibrary;
+mod error;
 mod interpreter;
 mod lexer;
 mod parser;
+mod standardlibrary;
 mod token;
-mod error;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -18,56 +19,87 @@ struct Args {
     #[clap(short, long, value_parser)]
     debug: bool,
 
-    /// Whether to not run the actual code
+    /// Whether to dry run
+    #[clap(long, value_parser)]
+    dry_run: bool,
+
+    /// Whether to print the time elapsed
     #[clap(short, long, value_parser)]
-    no_run: bool,
+    time: bool,
 
     #[clap()]
     input: String,
 }
 
+struct Config {
+    debug: bool,
+    dry_run: bool,
+    time: bool,
+}
+
+impl Config {
+    pub fn new(debug: bool, dry_run: bool, time: bool) -> Self {
+        Self {
+            debug,
+            dry_run,
+            time,
+        }
+    }
+}
 
 fn main() {
     let args = Args::parse();
     let filename = String::from(&args.input);
 
-    readfile(filename, args.debug, args.no_run);
+    let config = Config::new(args.debug, args.dry_run, args.time);
+
+    let contents = readfile(&filename);
+
+    run(filename, contents, config);
 }
 
-fn readfile(mut file: String, debug: bool, no_run: bool) {
+fn readfile(file: &str) -> String {
+    let mut file = file.to_string();
+
     if fs::metadata(&file).unwrap().is_dir() {
-        file = file.to_owned() + "/main.o";
+        file += "/main.oxi";
     }
 
-    let contents = match fs::read_to_string(&file) {
+    match fs::read_to_string(&file) {
         Ok(text) => text,
-        Err(_) => String::new(),
-    };
-
-    run(file, contents, debug, no_run)
+        Err(error) => panic!("error while reading file {error}"),
+    }
 }
 
-pub fn run(name: String, contents: String, debug: bool, no_run: bool) {
-    let mut lexer = Lexer::new(&name ,&contents);
+fn run(name: String, contents: String, config: Config) {
+    let main = Instant::now();
+
+    let mut lexer = Lexer::new(&name, &contents);
     let tokens = lexer.run();
 
-    if debug {
-        println!("LEXER: {tokens:?}\n");
+    if config.debug {
+        let duration = main.elapsed();
+        println!("LEXER: {tokens:?}\n\nTIME: {duration:?}\n");
     }
 
     let mut parser = parser::Parser::new(tokens.to_vec(), contents.clone(), name.clone());
     let ast = parser.run();
 
-    if debug {
-        println!("AST: {ast:?}\n");
+    if config.debug {
+        let duration = main.elapsed();
+        println!("AST: {ast:?}\n\nTIME: {duration:?}\n");
     }
-
-    if no_run {
+    if config.dry_run {
         return;
     }
 
     let mut interpreter = interpreter::Interpreter::new(ast.to_vec(), contents, name);
     interpreter.run();
 
-    println!();
+    if config.debug || config.time {
+        let duration = main.elapsed();
+        println!("\nTIME: {duration:?}");
+    }
+
+    println!()
 }
