@@ -1,6 +1,7 @@
 use clap::Parser;
 use lexer::Lexer;
 use std::fs;
+use std::process::exit;
 use std::time::Instant;
 
 mod ast;
@@ -27,8 +28,13 @@ struct Args {
     #[clap(short, long, value_parser)]
     time: bool,
 
+    /// The code which is to be executed
+    #[clap(short, long, value_parser)]
+    code: Option<String>,
+
+    /// The path of file which is to be executed
     #[clap()]
-    input: String,
+    input: Option<String>,
 }
 
 struct Config {
@@ -49,26 +55,22 @@ impl Config {
 
 fn main() {
     let args = Args::parse();
-    let filename = String::from(&args.input);
+
+    let contents = if args.code.is_some() {
+        args.code.unwrap()
+    } else if args.input.is_some() {
+        match fs::read_to_string(args.input.as_ref().unwrap()) {
+            Ok(text) => text,
+            Err(error) => panic!("error while reading file {error}"),
+        }
+    } else {
+        println!("expected either file name or contents with -c flag");
+        exit(1);
+    };
 
     let config = Config::new(args.debug, args.dry_run, args.time);
 
-    let contents = readfile(&filename);
-
-    run(filename, contents, config);
-}
-
-fn readfile(file: &str) -> String {
-    let mut file = file.to_string();
-
-    if fs::metadata(&file).unwrap().is_dir() {
-        file += "/main.oxi";
-    }
-
-    match fs::read_to_string(&file) {
-        Ok(text) => text,
-        Err(error) => panic!("error while reading file {error}"),
-    }
+    run(args.input.unwrap_or_default(), contents, config);
 }
 
 fn run(name: String, contents: String, config: Config) {
