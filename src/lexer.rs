@@ -17,7 +17,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub fn run(&mut self) -> &Vec<(Token, usize)> {
+    pub fn run(&mut self) -> Option<&Vec<(Token, usize)>> {
         let file = self.file.split("").collect::<Vec<&'a str>>();
 
         let mut stream = file.iter().peekable();
@@ -37,11 +37,11 @@ impl<'a> Lexer<'a> {
                 continue;
             }
 
-            let ch = if ch.unwrap().is_empty() {
+            let ch = if ch?.is_empty() {
                 stream.next();
                 continue;
             } else {
-                stream.next().unwrap().chars().next().unwrap()
+                stream.next()?.chars().next()?
             };
 
             if ch.is_whitespace() {
@@ -62,16 +62,16 @@ impl<'a> Lexer<'a> {
                         continue;
                     }
 
-                    if !ch.unwrap().chars().next().unwrap().is_alphabetic() {
+                    if !ch?.chars().next()?.is_alphabetic() {
                         self.at -= 1;
                         break;
                     }
 
-                    let ch = if ch.unwrap().is_empty() {
+                    let ch = if ch?.is_empty() {
                         stream.next();
                         continue;
                     } else {
-                        stream.next().unwrap().chars().next().unwrap()
+                        stream.next()?.chars().next()?
                     };
 
                     token.push(ch);
@@ -89,17 +89,17 @@ impl<'a> Lexer<'a> {
                         continue;
                     }
 
-                    if ch.unwrap().starts_with('\"') {
+                    if ch?.starts_with('\"') {
                         self.at -= 1;
                         stream.next();
                         break;
                     }
 
-                    let ch = if ch.unwrap().is_empty() {
+                    let ch = if ch?.is_empty() {
                         stream.next();
                         continue;
                     } else {
-                        stream.next().unwrap().chars().next().unwrap()
+                        stream.next()?.chars().next()?
                     };
 
                     token.push(ch);
@@ -122,16 +122,16 @@ impl<'a> Lexer<'a> {
                         continue;
                     }
 
-                    if !ch.unwrap().chars().next().unwrap().is_numeric() {
+                    if !ch?.chars().next()?.is_numeric() {
                         self.at -= 1;
                         break;
                     }
 
-                    let ch = if ch.unwrap().is_empty() {
+                    let ch = if ch?.is_empty() {
                         stream.next();
                         continue;
                     } else {
-                        stream.next().unwrap().chars().next().unwrap()
+                        stream.next()?.chars().next()?
                     };
 
                     token.push(ch);
@@ -159,11 +159,11 @@ impl<'a> Lexer<'a> {
                             continue;
                         }
 
-                        let ch = if ch.unwrap().is_empty() {
+                        let ch = if ch?.is_empty() {
                             stream.next();
                             continue;
                         } else {
-                            stream.peek().unwrap().chars().next().unwrap()
+                            stream.peek()?.chars().next()?
                         };
 
                         if ch == '=' {
@@ -186,11 +186,11 @@ impl<'a> Lexer<'a> {
                             continue;
                         }
 
-                        let ch = if ch.unwrap().is_empty() {
+                        let ch = if ch?.is_empty() {
                             stream.next();
                             continue;
                         } else {
-                            stream.peek().unwrap().chars().next().unwrap()
+                            stream.peek()?.chars().next()?
                         };
 
                         if ch == '=' {
@@ -213,11 +213,11 @@ impl<'a> Lexer<'a> {
                             continue;
                         }
 
-                        let ch = if ch.unwrap().is_empty() {
+                        let ch = if ch?.is_empty() {
                             stream.next();
                             continue;
                         } else {
-                            stream.peek().unwrap().chars().next().unwrap()
+                            stream.peek()?.chars().next()?
                         };
 
                         if ch == '=' {
@@ -240,11 +240,11 @@ impl<'a> Lexer<'a> {
                             continue;
                         }
 
-                        let ch = if ch.unwrap().is_empty() {
+                        let ch = if ch?.is_empty() {
                             stream.next();
                             continue;
                         } else {
-                            stream.peek().unwrap().chars().next().unwrap()
+                            stream.peek()?.chars().next()?
                         };
 
                         if ch == '=' {
@@ -296,15 +296,15 @@ impl<'a> Lexer<'a> {
                     "false" => Token::Bool(false),
                     _ => {
                         if self.tokens.last().is_some()
-                            && self.tokens.last().unwrap().0 == Token::Fn
+                            && self.tokens.last()?.0 == Token::Fn
                         {
                             Token::FunctionName(token)
                         } else {
                             let mut cloned_stream = stream.clone();
                             if cloned_stream.peek().is_some()
-                                && cloned_stream.next().unwrap().starts_with('(')
+                                && cloned_stream.next()?.starts_with('(')
                             {
-                                Token::FunctionCall(token)
+                                Token::FunctionName(token)
                             } else {
                                 Token::Identifier(token)
                             }
@@ -315,6 +315,6 @@ impl<'a> Lexer<'a> {
                 self.tokens.push((t, self.at - size))
             }
         }
-        &self.tokens
+        Some(&self.tokens)
     }
 }

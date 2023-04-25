@@ -6,42 +6,36 @@ use crate::{
     token::Token,
 };
 
-pub struct Parser {
-    name: String,
-    file: String,
+pub struct Parser<'a> {
+    name: &'a str,
+    file: &'a str,
     tokens: Vec<(Token, usize)>,
-    ast: Vec<(AstNode, usize)>,
 }
 
-impl Parser {
-    pub fn new(tokens: Vec<(Token, usize)>, file: String, name: String) -> Self {
-        Self {
-            name,
-            file,
-            tokens,
-            ast: vec![],
-        }
+impl<'a> Parser<'a> {
+    pub fn new(tokens: Vec<(Token, usize)>, name: &'a str, file: &'a str) -> Self {
+        Self { name, file, tokens }
     }
 
-    pub fn run(&mut self) -> &Vec<(AstNode, usize)> {
-        self.ast = self.match_tokens(self.tokens.clone());
+    pub fn run(&'a self) -> Option<Vec<(AstNode, usize)>> {
+        let ast = self.match_tokens(self.tokens.clone())?;
 
-        &self.ast
+        Some(ast)
     }
 
-    pub fn match_tokens(&self, tokens: Vec<(Token, usize)>) -> Vec<(AstNode, usize)> {
+    pub fn match_tokens(&'a self, tokens: Vec<(Token, usize)>) -> Option<Vec<(AstNode, usize)>> {
         let mut pos = 0;
-        let mut statements = vec![];
         let mut nodes: Vec<(AstNode, usize)> = vec![];
 
         loop {
+            let mut statements = vec![];
             let token = tokens.get(pos);
 
             if token.is_none() {
                 break;
             }
 
-            let token = token.unwrap();
+            let token = token?;
 
             if token.0 == Token::Let {
                 loop {
@@ -51,12 +45,11 @@ impl Parser {
                         break;
                     }
 
-                    let token = token.unwrap();
+                    let token = token?;
 
                     if token.0 == Token::Semicolon {
                         statements.push(token);
-                        nodes.push(self.parse(statements.clone()));
-                        statements.clear();
+                        nodes.push(self.parse(statements)?);
                         break;
                     }
 
@@ -72,12 +65,11 @@ impl Parser {
                         break;
                     }
 
-                    let token = token.unwrap();
+                    let token = token?;
 
                     if token.0 == Token::Semicolon {
                         statements.push(token);
-                        nodes.push(self.parse(statements.clone()));
-                        statements.clear();
+                        nodes.push(self.parse(statements)?);
                         break;
                     }
 
@@ -85,7 +77,7 @@ impl Parser {
 
                     pos += 1;
                 }
-            } else if let Token::FunctionCall(_) = token.0 {
+            } else if let Token::FunctionName(_) = token.0 {
                 loop {
                     let token = tokens.get(pos);
 
@@ -93,12 +85,11 @@ impl Parser {
                         break;
                     }
 
-                    let token = token.unwrap();
+                    let token = token?;
 
                     if token.0 == Token::Semicolon {
                         statements.push(token);
-                        nodes.push(self.parse(statements.clone()));
-                        statements.clear();
+                        nodes.push(self.parse(statements)?);
                         break;
                     }
 
@@ -115,14 +106,13 @@ impl Parser {
                         break;
                     }
 
-                    let token = token.unwrap();
+                    let token = token?;
 
                     if token.0 == Token::RCurly {
                         depth -= 1;
                         if depth == 0 {
                             statements.push(token);
-                            nodes.push(self.parse(statements.clone()));
-                            statements.clear();
+                            nodes.push(self.parse(statements)?);
                             break;
                         }
                     }
@@ -144,11 +134,11 @@ impl Parser {
                             break;
                         }
 
-                        let token = token.unwrap();
+                        let token = token?;
 
                         if token.0 == Token::Semicolon {
                             statements.push(token);
-                            nodes.push(self.parse(statements.clone()));
+                            nodes.push(self.parse(statements)?);
                             break;
                         }
 
@@ -160,8 +150,8 @@ impl Parser {
                     Token::Semicolon => {}
                     t => {
                         error(
-                            &self.name,
-                            &self.file,
+                            self.name,
+                            self.file,
                             "0001",
                             &format!("token `{}` was not expected here", t.as_string()),
                             &format!("token `{}` was not expected here", t.as_string()),
@@ -171,27 +161,25 @@ impl Parser {
                 }
             }
 
-            statements.clear();
-
             pos += 1;
         }
 
-        nodes
+        Some(nodes)
     }
 
-    pub fn parse(&self, tokens: Vec<&(Token, usize)>) -> (AstNode, usize) {
+    pub fn parse(&'a self, tokens: Vec<&'a (Token, usize)>) -> Option<(AstNode, usize)> {
         let mut stream = tokens.iter().peekable();
 
-        let token = *stream.next().unwrap();
+        let token = *stream.next()?;
 
         let node: (AstNode, usize) = if token.0 == Token::Let {
-            let t = &stream.next().unwrap();
+            let t = &stream.next()?;
             if let Token::Identifier(ident) = &t.0 {
-                let t = stream.next().unwrap();
+                let t = stream.next()?;
                 if t.0 != Token::Equal {
                     error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0001",
                         &format!("expected `=` found {}", t.0.as_string()),
                         "use `=` here",
@@ -201,12 +189,12 @@ impl Parser {
 
                 let mut tokens = stream.collect::<Vec<_>>();
 
-                let t = tokens.pop().unwrap();
+                let t = tokens.pop()?;
 
                 if t.0 != Token::Semicolon {
                     error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0001",
                         &format!("expected `;` found {}", t.0.as_string()),
                         "use `;` here",
@@ -221,8 +209,8 @@ impl Parser {
                 (AstNode::Assignment(ident.to_string(), expression), token.1)
             } else {
                 error(
-                    &self.name,
-                    &self.file,
+                    self.name,
+                    self.file,
                     "0001",
                     &format!("expected identifier found {}", t.0.as_string()),
                     "use an identifier here",
@@ -230,12 +218,12 @@ impl Parser {
                 );
             }
         } else if let Token::Identifier(ident) = &token.0 {
-            let t = &stream.next().unwrap();
+            let t = &stream.next()?;
 
             if t.0 != Token::Equal {
                 error(
-                    &self.name,
-                    &self.file,
+                    self.name,
+                    self.file,
                     "0001",
                     &format!("unexpected punctuator {}", t.0.as_string()),
                     "for declaring a value `=` should be used",
@@ -245,12 +233,12 @@ impl Parser {
 
             let mut tokens = stream.collect::<Vec<_>>();
 
-            let t = tokens.pop().unwrap();
+            let t = tokens.pop()?;
 
             if t.0 != Token::Semicolon {
                 error(
-                    &self.name,
-                    &self.file,
+                    self.name,
+                    self.file,
                     "0001",
                     &format!("expected `;` found {}", t.0.as_string()),
                     "use `;` here",
@@ -283,12 +271,12 @@ impl Parser {
                 }
             }
 
-            let t = statements.pop().unwrap();
+            let t = statements.pop()?;
 
             if t.0 != Token::RCurly {
                 error(
-                    &self.name,
-                    &self.file,
+                    self.name,
+                    self.file,
                     "0001",
                     &format!("expected `}}` found {}", t.0.as_string()),
                     "use `}` here",
@@ -301,18 +289,18 @@ impl Parser {
             let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
 
             (
-                AstNode::If(expression, self.match_tokens(statements)),
+                AstNode::If(expression, self.match_tokens(statements)?),
                 token.1 + 2,
             )
         } else if token.0 == Token::Loop {
             let mut statements = vec![];
 
-            let t = &stream.next().unwrap();
+            let t = &stream.next()?;
 
             if t.0 != Token::LCurly {
                 error(
-                    &self.name,
-                    &self.file,
+                    self.name,
+                    self.file,
                     "0001",
                     &format!("expected `{{` found {}", t.0.as_string()),
                     "use `{` here",
@@ -324,12 +312,12 @@ impl Parser {
                 statements.push((*token).to_owned());
             }
 
-            let t = statements.pop().unwrap();
+            let t = statements.pop()?;
 
             if t.0 != Token::RCurly {
                 error(
-                    &self.name,
-                    &self.file,
+                    self.name,
+                    self.file,
                     "0001",
                     &format!("expected `}}` found {}", t.0.as_string()),
                     "use `}` here",
@@ -337,13 +325,13 @@ impl Parser {
                 );
             };
 
-            (AstNode::Loop(self.match_tokens(statements)), token.1 + 4)
-        } else if let Token::FunctionCall(ident) = &token.0 {
-            let t = &stream.next().unwrap();
+            (AstNode::Loop(self.match_tokens(statements)?), token.1 + 4)
+        } else if let Token::FunctionName(ident) = &token.0 {
+            let t = &stream.next()?;
             if t.0 != Token::LParen {
                 error(
-                    &self.name,
-                    &self.file,
+                    self.name,
+                    self.file,
                     "0001",
                     &format!("expected `(` found {}", t.0.as_string()),
                     "use `(` here",
@@ -380,7 +368,7 @@ impl Parser {
 
             (AstNode::FunctionCall(ident.to_string(), params), token.1)
         } else if token.0 == Token::Fn {
-            let t = &stream.next().unwrap();
+            let t = &stream.next()?;
             if let Token::FunctionName(name) = &t.0 {
                 let mut params = vec![];
 
@@ -391,7 +379,7 @@ impl Parser {
                         break;
                     }
 
-                    let token = &stream.next().unwrap().0;
+                    let token = &stream.next()?.0;
 
                     if token == &Token::RParen {
                         break;
@@ -406,12 +394,12 @@ impl Parser {
                     }
                 }
 
-                let t = &stream.next().unwrap();
+                let t = &stream.next()?;
 
                 if t.0 != Token::LCurly {
                     error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0001",
                         &format!("expected `{{` found {}", t.0.as_string()),
                         "use `{` here",
@@ -428,17 +416,17 @@ impl Parser {
                         break;
                     }
 
-                    let token = stream.next().unwrap();
+                    let token = stream.next()?;
 
                     statements.push((*token).to_owned());
                 }
 
-                let t = statements.pop().unwrap();
+                let t = statements.pop()?;
 
                 if t.0 != Token::RCurly {
                     error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0001",
                         &format!("expected `}}` found {}", t.0.as_string()),
                         "use `}` here",
@@ -450,14 +438,14 @@ impl Parser {
                     AstNode::FunctionDeclaration(
                         name.to_string(),
                         params,
-                        self.match_tokens(statements),
+                        self.match_tokens(statements)?,
                     ),
                     token.1 + 2,
                 )
             } else {
                 error(
-                    &self.name,
-                    &self.file,
+                    self.name,
+                    self.file,
                     "0001",
                     &format!("expected name of function found {}", t.0.as_string()),
                     "use function name here",
@@ -467,12 +455,12 @@ impl Parser {
         } else if token.0 == Token::Return {
             let mut tokens = stream.collect::<Vec<_>>();
 
-            let t = tokens.pop().unwrap();
+            let t = tokens.pop()?;
 
             if t.0 != Token::Semicolon {
                 error(
-                    &self.name,
-                    &self.file,
+                    self.name,
+                    self.file,
                     "0001",
                     &format!("expected `;` found {}", t.0.as_string()),
                     "use `;` here",
@@ -487,8 +475,8 @@ impl Parser {
             (AstNode::Return(expression), token.1)
         } else {
             error(
-                &self.name,
-                &self.file,
+                self.name,
+                self.file,
                 "0001",
                 &format!("{} was not expected", token.0.as_string()),
                 "did not expect this",
@@ -496,11 +484,11 @@ impl Parser {
             );
         };
 
-        node
+        Some(node)
     }
 
-    pub fn pratt_parser<'a>(
-        &self,
+    pub fn pratt_parser(
+        &'a self,
         mut lexer: Peekable<IntoIter<&'a (Token, usize)>>,
         prec: u16,
     ) -> (Expression, Peekable<IntoIter<&'a (Token, usize)>>) {
@@ -530,12 +518,12 @@ impl Parser {
                     expr = Some(Expression::Integer(-i));
                 }
             }
-            Token::FunctionCall(f) => {
+            Token::FunctionName(f) => {
                 let t = &lexer.next().unwrap();
                 if t.0 != Token::LParen {
                     error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0001",
                         &format!("expected `(` found {}", t.0.as_string()),
                         "use `(` here",
@@ -630,8 +618,8 @@ impl Parser {
 
         if expr.is_none() {
             error(
-                &self.name,
-                &self.file,
+                self.name,
+                self.file,
                 "0003",
                 "could not parse expression",
                 "expression couldn't be parsed",
@@ -658,8 +646,8 @@ impl Parser {
             | Token::IsLesserEqual => 6,
             _ => {
                 error(
-                    &self.name,
-                    &self.file,
+                    self.name,
+                    self.file,
                     "0001",
                     &format!("expected an operator found {}", op.0.as_string()),
                     "use an operator here",

@@ -1,4 +1,4 @@
-use crate::{token::Token};
+use crate::token::Token;
 
 #[derive(Clone, Debug)]
 pub enum AstNode {

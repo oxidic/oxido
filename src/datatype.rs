@@ -10,9 +10,9 @@ pub enum Data {
 impl Data {
     pub fn type_as_str(&self) -> &str {
         match self {
-            Data::Str(_) => "String",
-            Data::Integer(_) => "int",
-            Data::Bool(_) => "bool",
+            Data::Str(_) => "Str",
+            Data::Integer(_) => "Integer",
+            Data::Bool(_) => "Bool",
         }
     }
 }
@@ -25,7 +25,7 @@ pub struct Function {
 }
 
 impl Function {
-    pub fn init(name: String, params: Vec<String>, statements: Vec<(AstNode, usize)>) -> Self {
+    pub fn new(name: String, params: Vec<String>, statements: Vec<(AstNode, usize)>) -> Self {
         Self {
             name,
             params,

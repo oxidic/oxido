@@ -1,6 +1,6 @@
 use clap::Parser;
 use lexer::Lexer;
-use std::fs;
+use std::fs::{metadata, read_to_string};
 use std::process::exit;
 use std::time::Instant;
 
@@ -59,9 +59,33 @@ fn main() {
     let contents = if args.code.is_some() {
         args.code.unwrap()
     } else if args.input.is_some() {
-        match fs::read_to_string(args.input.as_ref().unwrap()) {
+        let mut input = args.input.clone().unwrap();
+
+        let root = metadata(&input);
+        if root.unwrap().is_dir() {
+            let main = metadata(input.clone() + "/main.oxi");
+            if main.unwrap().is_file() {
+                input += "/main.oxi";
+            } else {
+                let src = metadata(input.clone() + "/src");
+                if src.is_ok() && !src.unwrap().is_dir() {
+                    println!("error while reading, `{input}` is a dir and does not has `src` or is a file");
+                    exit(1);
+                }
+                let main = metadata(input.to_string() + "/src/main.oxi");
+                if main.is_ok() && main.unwrap().is_dir() {
+                    println!(
+                        "error while reading, `{input}` is a dir and does not has `src/main.oxi` or is a dir"
+                    );
+                    exit(1);
+                }
+                input += "/src/main.oxi"
+            }
+        }
+
+        match read_to_string(input) {
             Ok(text) => text,
-            Err(error) => panic!("error while reading file {error}"),
+            Err(error) => panic!("error while reading file, {error}"),
         }
     } else {
         println!("expected either file name or contents with -c flag");
@@ -77,15 +101,15 @@ fn run(name: String, contents: String, config: Config) {
     let main = Instant::now();
 
     let mut lexer = Lexer::new(&name, &contents);
-    let tokens = lexer.run();
+    let tokens = lexer.run().unwrap();
 
     if config.debug {
         let duration = main.elapsed();
         println!("LEXER: {tokens:?}\n\nTIME: {duration:?}\n");
     }
 
-    let mut parser = parser::Parser::new(tokens.to_vec(), contents.clone(), name.clone());
-    let ast = parser.run();
+    let parser = parser::Parser::new(tokens.to_vec(), &name, &contents);
+    let ast = parser.run().unwrap();
 
     if config.debug {
         let duration = main.elapsed();
@@ -95,7 +119,7 @@ fn run(name: String, contents: String, config: Config) {
         return;
     }
 
-    let mut interpreter = interpreter::Interpreter::new(ast.to_vec(), contents, name);
+    let mut interpreter = interpreter::Interpreter::new(ast.to_vec(), &name, &contents);
     interpreter.run();
 
     if config.debug || config.time {

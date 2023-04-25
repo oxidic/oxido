@@ -8,9 +8,9 @@ use crate::{
     token::Token,
 };
 
-pub struct Interpreter {
-    name: String,
-    file: String,
+pub struct Interpreter<'a> {
+    name: &'a str,
+    file: &'a str,
     ast: Vec<(AstNode, usize)>,
     stop: bool,
     returned: Option<Data>,
@@ -18,8 +18,8 @@ pub struct Interpreter {
     functions: HashMap<String, Function>,
 }
 
-impl Interpreter {
-    pub fn new(ast: Vec<(AstNode, usize)>, file: String, name: String) -> Self {
+impl<'a> Interpreter<'a> {
+    pub fn new(ast: Vec<(AstNode, usize)>, name: &'a str, file: &'a str) -> Self {
         Self {
             name,
             file,
@@ -52,10 +52,10 @@ impl Interpreter {
                 self.variables.insert(ident, data);
             }
             AstNode::ReAssignment(ident, expression) => {
-                if !self.variables.contains_key(&ident) {
+                if !self.variables.contains_key(&*ident) {
                     error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0005",
                         "token was not expected here",
                         "unexpected token",
@@ -81,8 +81,8 @@ impl Interpreter {
                     }
                 } else {
                     error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
@@ -121,13 +121,13 @@ impl Interpreter {
 
                 if StandardLibrary::contains(&name) {
                     StandardLibrary::call(&name, args);
-                } else if self.functions.contains_key(&name) {
-                    let function = self.functions.get(&name).unwrap().to_owned();
+                } else if self.functions.contains_key(&*name) {
+                    let function = self.functions.get(&*name).unwrap().to_owned();
 
                     if args.len() != function.params.len() {
                         error(
-                            &self.name,
-                            &self.file,
+                            self.name,
+                            self.file,
                             "0004",
                             "not enough arguments were passed",
                             &format!(
@@ -161,7 +161,7 @@ impl Interpreter {
             }
             AstNode::FunctionDeclaration(name, params, statements) => {
                 self.functions
-                    .insert(name.clone(), Function::init(name, params, statements));
+                    .insert(name.clone(), Function::new(name, params, statements));
             }
             AstNode::Break => {
                 self.stop = true;
@@ -177,7 +177,7 @@ impl Interpreter {
                 self.parse_binary_operation(*lhs, op, *rhs, pos)
             }
             Expression::Integer(i) => Data::Integer(i),
-            Expression::Identifier(i) => self.variables.get(&i).unwrap().to_owned(),
+            Expression::Identifier(i) => self.variables.get(&*i).unwrap().to_owned(),
             Expression::Bool(b) => Data::Bool(b),
             Expression::Str(s) => Data::Str(s),
             Expression::FunctionCall(f, args) => {
@@ -190,8 +190,8 @@ impl Interpreter {
                     ) {
                         Some(data) => data,
                         None => error(
-                            &self.name,
-                            &self.file,
+                            self.name,
+                            self.file,
                             "0004",
                             "function does not return a value",
                             "function does not a return a value",
@@ -199,12 +199,12 @@ impl Interpreter {
                         ),
                     };
                 }
-                let function = self.functions.get(&f).unwrap().to_owned();
+                let function = self.functions.get(&*f).unwrap().to_owned();
 
                 if args.len() != function.params.len() {
                     error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0004",
                         "not enough arguments were passed",
                         &format!(
@@ -228,8 +228,8 @@ impl Interpreter {
                 loop {
                     if stream.peek().is_none() {
                         error(
-                            &self.name,
-                            &self.file,
+                            self.name,
+                            self.file,
                             "0004",
                             &format!("function {f} did not return a value"),
                             "expected function to return a value",
@@ -262,17 +262,17 @@ impl Interpreter {
             }
             Expression::Integer(i) => Data::Integer(i),
             Expression::Identifier(i) => {
-                if !self.variables.contains_key(&i) {
+                if !self.variables.contains_key(&*i) {
                     error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0006",
                         "attempt to access value of undeclared variable",
                         "declare the value of the variable before using it",
                         pos..pos + i.len(),
                     );
                 };
-                self.variables.get(&i).unwrap().to_owned()
+                self.variables.get(&*i).unwrap().to_owned()
             }
             Expression::Str(s) => Data::Str(s),
             Expression::Bool(b) => Data::Bool(b),
@@ -286,8 +286,8 @@ impl Interpreter {
                     ) {
                         Some(data) => data,
                         None => error(
-                            &self.name,
-                            &self.file,
+                            self.name,
+                            self.file,
                             "0004",
                             "function does not return a value",
                             "function does not a return a value",
@@ -295,12 +295,12 @@ impl Interpreter {
                         ),
                     };
                 }
-                let function = self.functions.get(&f).unwrap().to_owned();
+                let function = self.functions.get(&*f).unwrap().to_owned();
 
                 if args.len() != function.params.len() {
                     error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0004",
                         "not enough arguments were passed",
                         &format!(
@@ -325,8 +325,8 @@ impl Interpreter {
                 loop {
                     if stream.peek().is_none() {
                         error(
-                            &self.name,
-                            &self.file,
+                            self.name,
+                            self.file,
                             "0004",
                             &format!("function {f} did not return a value"),
                             "expected function to return a value",
@@ -350,7 +350,7 @@ impl Interpreter {
                 self.parse_binary_operation(*lhs, op, *rhs, pos)
             }
             Expression::Integer(i) => Data::Integer(i),
-            Expression::Identifier(i) => self.variables.get(&i).unwrap().to_owned(),
+            Expression::Identifier(i) => self.variables.get(&*i).unwrap().to_owned(),
             Expression::Str(s) => Data::Str(s),
             Expression::Bool(b) => Data::Bool(b),
             Expression::FunctionCall(f, args) => {
@@ -363,8 +363,8 @@ impl Interpreter {
                     ) {
                         Some(data) => data,
                         None => error(
-                            &self.name,
-                            &self.file,
+                            self.name,
+                            self.file,
                             "0004",
                             "function does not return a value",
                             "function does not a return a value",
@@ -372,12 +372,12 @@ impl Interpreter {
                         ),
                     };
                 }
-                let function = self.functions.get(&f).unwrap().to_owned();
+                let function = self.functions.get(&*f).unwrap().to_owned();
 
                 if args.len() != function.params.len() {
                     error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0004",
                         "not enough arguments were passed",
                         &format!(
@@ -401,8 +401,8 @@ impl Interpreter {
                 loop {
                     if stream.peek().is_none() {
                         error(
-                            &self.name,
-                            &self.file,
+                            self.name,
+                            self.file,
                             "0004",
                             &format!("function {f} did not return a value"),
                             "expected function to return a value",
@@ -425,8 +425,8 @@ impl Interpreter {
                 Data::Str(str) => match rhs {
                     Data::Str(s) => Data::Str(str + &s),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `String` found {}",
@@ -439,8 +439,8 @@ impl Interpreter {
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Integer(n + m),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -451,8 +451,8 @@ impl Interpreter {
                     ),
                 },
                 data => error(
-                    &self.name,
-                    &self.file,
+                    self.name,
+                    self.file,
                     "0002",
                     &format!(
                         "mismatched data types, expected `String` or `int` found {}",
@@ -466,8 +466,8 @@ impl Interpreter {
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Integer(n - m),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -478,8 +478,8 @@ impl Interpreter {
                     ),
                 },
                 data => error(
-                    &self.name,
-                    &self.file,
+                    self.name,
+                    self.file,
                     "0002",
                     &format!(
                         "mismatched data types, expected `int` found {}",
@@ -493,8 +493,8 @@ impl Interpreter {
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Integer(n * m),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -505,8 +505,8 @@ impl Interpreter {
                     ),
                 },
                 data => error(
-                    &self.name,
-                    &self.file,
+                    self.name,
+                    self.file,
                     "0002",
                     &format!(
                         "mismatched data types, expected `int` found {}",
@@ -520,8 +520,8 @@ impl Interpreter {
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Integer(n / m),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -532,8 +532,8 @@ impl Interpreter {
                     ),
                 },
                 data => error(
-                    &self.name,
-                    &self.file,
+                    self.name,
+                    self.file,
                     "0002",
                     &format!(
                         "mismatched data types, expected `int` found {}",
@@ -547,8 +547,8 @@ impl Interpreter {
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Integer(n.pow(m as u32)),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -559,8 +559,8 @@ impl Interpreter {
                     ),
                 },
                 data => error(
-                    &self.name,
-                    &self.file,
+                    self.name,
+                    self.file,
                     "0002",
                     &format!(
                         "mismatched data types, expected `int` found {}",
@@ -574,8 +574,8 @@ impl Interpreter {
                 Data::Str(str) => match rhs {
                     Data::Str(s) => Data::Bool(str == s),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `String` found {}",
@@ -588,8 +588,8 @@ impl Interpreter {
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Bool(n == m),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -602,8 +602,8 @@ impl Interpreter {
                 Data::Bool(b) => match rhs {
                     Data::Bool(d) => Data::Bool(b == d),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
@@ -618,8 +618,8 @@ impl Interpreter {
                 Data::Str(str) => match rhs {
                     Data::Str(s) => Data::Bool(str != s),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `String` found {}",
@@ -632,8 +632,8 @@ impl Interpreter {
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Bool(n != m),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -646,8 +646,8 @@ impl Interpreter {
                 Data::Bool(b) => match rhs {
                     Data::Bool(d) => Data::Bool(b != d),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
@@ -662,8 +662,8 @@ impl Interpreter {
                 Data::Str(str) => match rhs {
                     Data::Str(s) => Data::Bool(str > s),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `String` found {}",
@@ -676,8 +676,8 @@ impl Interpreter {
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Bool(n > m),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -690,8 +690,8 @@ impl Interpreter {
                 Data::Bool(b) => match rhs {
                     Data::Bool(d) => Data::Bool(b & !d),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
@@ -706,8 +706,8 @@ impl Interpreter {
                 Data::Str(str) => match rhs {
                     Data::Str(s) => Data::Bool(str < s),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `String` found {}",
@@ -720,8 +720,8 @@ impl Interpreter {
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Bool(n < m),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -734,8 +734,8 @@ impl Interpreter {
                 Data::Bool(b) => match rhs {
                     Data::Bool(d) => Data::Bool(!b & d),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
@@ -750,8 +750,8 @@ impl Interpreter {
                 Data::Str(str) => match rhs {
                     Data::Str(s) => Data::Bool(str >= s),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `String` found {}",
@@ -764,8 +764,8 @@ impl Interpreter {
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Bool(n >= m),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -778,8 +778,8 @@ impl Interpreter {
                 Data::Bool(b) => match rhs {
                     Data::Bool(d) => Data::Bool(b >= d),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
@@ -794,8 +794,8 @@ impl Interpreter {
                 Data::Str(str) => match rhs {
                     Data::Str(s) => Data::Bool(str <= s),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `String` found {}",
@@ -808,8 +808,8 @@ impl Interpreter {
                 Data::Integer(n) => match rhs {
                     Data::Integer(m) => Data::Bool(n <= m),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -822,8 +822,8 @@ impl Interpreter {
                 Data::Bool(b) => match rhs {
                     Data::Bool(d) => Data::Bool(b <= d),
                     data => error(
-                        &self.name,
-                        &self.file,
+                        self.name,
+                        self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",

@@ -18,9 +18,9 @@ impl StandardLibrary {
                 None
             }
             "read" => Some(io::read()),
-            "int" => Some(types::int(params.first().unwrap().to_owned())),
-            "bool" => Some(types::bool(params.first().unwrap().to_owned())),
-            "str" => Some(types::str(params.first().unwrap().to_owned())),
+            "int" => Some(types::int(params.first()?.to_owned())),
+            "bool" => Some(types::bool(params.first()?.to_owned())),
+            "str" => Some(types::str(params.first()?.to_owned())),
             _ => panic!("not a global function"),
         }
     }
@@ -47,8 +47,8 @@ mod types {
 
     pub fn str(data: Data) -> Data {
         match data {
-            Data::Integer(i) => Data::Str(format!("{i}")),
-            Data::Bool(b) => Data::Str(format!("{b}")),
+            Data::Integer(i) => Data::Str(i.to_string()),
+            Data::Bool(b) => Data::Str(b.to_string()),
             Data::Str(_) => data,
         }
     }

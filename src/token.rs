@@ -23,7 +23,6 @@ pub enum Token {
 
     Identifier(String),
     FunctionName(String),
-    FunctionCall(String),
 
     Str(String),
     Integer(i64),
@@ -65,7 +64,6 @@ impl Token {
 
             Token::Identifier(ident) => ident.to_string(),
             Token::FunctionName(fname) => fname.to_string(),
-            Token::FunctionCall(fcall) => fcall.to_string(),
 
             Token::Str(string) => string.to_string(),
             Token::Integer(i) => format!("{i}"),
