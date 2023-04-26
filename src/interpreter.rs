@@ -144,16 +144,18 @@ impl<'a> Interpreter<'a> {
                     }
 
                     let mut stream = function.statements.into_iter().peekable();
+
                     loop {
                         if stream.peek().is_none() {
                             break;
                         }
 
+                        self.match_node(stream.next().unwrap());
+
                         if self.returned.is_some() {
+                            self.returned = None;
                             break;
                         }
-
-                        self.match_node(stream.next().unwrap());
                     }
                 }
             }

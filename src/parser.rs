@@ -1,4 +1,4 @@
-use std::{iter::Peekable, vec::IntoIter, ops::Range};
+use std::{iter::Peekable, ops::Range, vec::IntoIter};
 
 use crate::{
     ast::{AstNode, Expression},
@@ -22,7 +22,10 @@ impl<'a> Parser<'a> {
         Some(ast)
     }
 
-    pub fn match_tokens(&'a self, tokens: Vec<(Token, usize)>) -> Option<Vec<(AstNode, Range<usize>)>> {
+    pub fn match_tokens(
+        &'a self,
+        tokens: Vec<(Token, usize)>,
+    ) -> Option<Vec<(AstNode, Range<usize>)>> {
         let mut pos = 0;
         let mut nodes: Vec<(AstNode, Range<usize>)> = vec![];
 
@@ -205,7 +208,10 @@ impl<'a> Parser<'a> {
 
                 let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
 
-                (AstNode::Assignment(ident.to_string(), expression), token.1..t.1)
+                (
+                    AstNode::Assignment(ident.to_string(), expression),
+                    token.1..t.1,
+                )
             } else {
                 error(
                     self.name,
@@ -343,17 +349,30 @@ impl<'a> Parser<'a> {
             let mut expression = vec![];
 
             let mut end = 0;
+            let mut depth = 1;
 
             for token in tokens {
+                if token.0 == Token::LParen {
+                    depth += 1;
+                }
                 if token.0 == Token::RParen {
+                    depth -= 1;
                     if !expression.is_empty() {
+                        if depth > 0 {
+                            expression.push(token);
+                        }
                         let (data, _) =
                             self.pratt_parser(expression.clone().into_iter().peekable(), 0);
 
                         params.push(data);
+
+                        expression.clear();
+                        continue;
                     }
-                    end = token.1;
-                    break;
+                    if depth == 0 {
+                        end = token.1;
+                        break;
+                    }
                 }
 
                 if token.0 == Token::Comma {
@@ -368,7 +387,10 @@ impl<'a> Parser<'a> {
                 expression.push(token);
             }
 
-            (AstNode::FunctionCall(ident.to_string(), params), token.1..end)
+            (
+                AstNode::FunctionCall(ident.to_string(), params),
+                token.1..end,
+            )
         } else if token.0 == Token::Fn {
             let t = &stream.next()?;
             if let Token::FunctionName(name) = &t.0 {
