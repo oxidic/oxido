@@ -12,7 +12,7 @@ pub fn error(
     code: &str,
     message: &str,
     note: &str,
-    range: Range<usize>,
+    range: &Range<usize>,
 ) -> ! {
     let mut files = SimpleFiles::new();
 
@@ -21,7 +21,7 @@ pub fn error(
     let diagnostic = Diagnostic::error()
         .with_message(message)
         .with_code("E".to_owned() + code)
-        .with_labels(vec![Label::primary(file_id, range).with_message(note)])
+        .with_labels(vec![Label::primary(file_id, range.clone()).with_message(note)])
         .with_notes(vec!["note: ".to_owned() + note]);
 
     let writer = StandardStream::stderr(ColorChoice::Always);

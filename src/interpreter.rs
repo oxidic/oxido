@@ -1,4 +1,4 @@
-use std::{collections::HashMap, process};
+use std::{collections::HashMap, process, ops::Range};
 
 use crate::{
     ast::{AstNode, Expression},
@@ -11,7 +11,6 @@ use crate::{
 pub struct Interpreter<'a> {
     name: &'a str,
     file: &'a str,
-    ast: Vec<(AstNode, usize)>,
     stop: bool,
     returned: Option<Data>,
     variables: HashMap<String, Data>,
@@ -19,11 +18,10 @@ pub struct Interpreter<'a> {
 }
 
 impl<'a> Interpreter<'a> {
-    pub fn new(ast: Vec<(AstNode, usize)>, name: &'a str, file: &'a str) -> Self {
+    pub fn new(name: &'a str, file: &'a str) -> Self {
         Self {
             name,
             file,
-            ast,
             stop: false,
             returned: None,
             variables: HashMap::new(),
@@ -31,8 +29,8 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn run(&mut self) {
-        let mut stream = self.ast.clone().into_iter().peekable();
+    pub fn run(&mut self, ast: Vec<(AstNode, Range<usize>)>) {
+        let mut stream = ast.into_iter().peekable();
         loop {
             if stream.peek().is_none() {
                 break;
@@ -42,13 +40,13 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn match_node(&mut self, node: (AstNode, usize)) {
+    pub fn match_node(&mut self, node: (AstNode, Range<usize>)) {
         if self.stop || self.returned.is_some() {
             return;
         }
         match node.0 {
             AstNode::Assignment(ident, expression) => {
-                let data = self.parse_expression(expression, node.1);
+                let data = self.parse_expression(expression, &node.1);
                 self.variables.insert(ident, data);
             }
             AstNode::ReAssignment(ident, expression) => {
@@ -59,14 +57,14 @@ impl<'a> Interpreter<'a> {
                         "0005",
                         "token was not expected here",
                         "unexpected token",
-                        node.1..node.1,
+                        &node.1,
                     );
                 }
-                let data = self.parse_expression(expression, node.1);
+                let data = self.parse_expression(expression, &node.1);
                 self.variables.insert(ident, data);
             }
             AstNode::If(condition, statements) => {
-                let data = self.parse_expression(condition, node.1);
+                let data = self.parse_expression(condition, &node.1);
 
                 if let Data::Bool(bool) = data {
                     if bool {
@@ -89,7 +87,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `bool` was expected",
-                        node.1..node.1,
+                        &node.1,
                     );
                 }
             }
@@ -116,7 +114,7 @@ impl<'a> Interpreter<'a> {
                 let mut args = vec![];
 
                 for param in params {
-                    args.push(self.parse_expression(param, node.1))
+                    args.push(self.parse_expression(param, &node.1))
                 }
 
                 if StandardLibrary::contains(&name) {
@@ -135,7 +133,7 @@ impl<'a> Interpreter<'a> {
                                 function.params.len(),
                                 args.len()
                             ),
-                            node.1..node.1,
+                            &node.1,
                         );
                     }
 
@@ -166,12 +164,12 @@ impl<'a> Interpreter<'a> {
             AstNode::Break => {
                 self.stop = true;
             }
-            AstNode::Return(expr) => self.returned = Some(self.parse_expression(expr, node.1)),
+            AstNode::Return(expr) => self.returned = Some(self.parse_expression(expr, &node.1)),
             AstNode::Exit => process::exit(0),
         }
     }
 
-    pub fn parse_function(&mut self, f: String, args: Vec<Expression>, pos: usize) -> Data {
+    pub fn parse_function(&mut self, f: String, args: Vec<Expression>, pos: &Range<usize>) -> Data {
         if StandardLibrary::contains(&f) {
             return match StandardLibrary::call(
                 &f,
@@ -186,7 +184,7 @@ impl<'a> Interpreter<'a> {
                     "0004",
                     "function does not return a value",
                     "function does not a return a value",
-                    pos..pos,
+                    pos,
                 ),
             };
         }
@@ -203,7 +201,7 @@ impl<'a> Interpreter<'a> {
                     function.params.len(),
                     args.len()
                 ),
-                pos..pos,
+                pos,
             );
         }
 
@@ -224,7 +222,7 @@ impl<'a> Interpreter<'a> {
                     "0004",
                     &format!("function {f} did not return a value"),
                     "expected function to return a value",
-                    pos..pos,
+                    pos,
                 );
             }
 
@@ -238,7 +236,7 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn parse_expression(&mut self, expr: Expression, pos: usize) -> Data {
+    pub fn parse_expression(&mut self, expr: Expression, pos: &Range<usize>) -> Data {
         match expr {
             Expression::BinaryOperation(lhs, op, rhs) => {
                 self.parse_binary_operation(*lhs, op, *rhs, pos)
@@ -258,7 +256,7 @@ impl<'a> Interpreter<'a> {
         lhs: Expression,
         op: Token,
         rhs: Expression,
-        pos: usize,
+        pos: &Range<usize>,
     ) -> Data {
         let lhs = match lhs {
             Expression::BinaryOperation(lhs, op, rhs) => {
@@ -273,7 +271,7 @@ impl<'a> Interpreter<'a> {
                         "0006",
                         "attempt to access value of undeclared variable",
                         "declare the value of the variable before using it",
-                        pos..pos + i.len(),
+                        pos,
                     );
                 };
                 self.variables.get(&*i).unwrap().to_owned()
@@ -310,7 +308,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `String` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
                 Data::Integer(n) => match rhs {
@@ -324,7 +322,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `int` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
                 data => error(
@@ -336,7 +334,7 @@ impl<'a> Interpreter<'a> {
                         data.type_as_str()
                     ),
                     "a value of type `String` or `int` was expected",
-                    pos..pos,
+                    pos,
                 ),
             },
             Token::Subtraction => match lhs {
@@ -351,7 +349,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `int` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
                 data => error(
@@ -363,7 +361,7 @@ impl<'a> Interpreter<'a> {
                         data.type_as_str()
                     ),
                     "a value of type `int` was expected",
-                    pos..pos,
+                    pos,
                 ),
             },
             Token::Multiplication => match lhs {
@@ -378,7 +376,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `int` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
                 data => error(
@@ -390,7 +388,7 @@ impl<'a> Interpreter<'a> {
                         data.type_as_str()
                     ),
                     "a value of type `int` was expected",
-                    pos..pos,
+                    pos,
                 ),
             },
             Token::Division => match lhs {
@@ -405,7 +403,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `int` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
                 data => error(
@@ -417,7 +415,7 @@ impl<'a> Interpreter<'a> {
                         data.type_as_str()
                     ),
                     "a value of type `int` was expected",
-                    pos..pos,
+                    pos,
                 ),
             },
             Token::Power => match lhs {
@@ -432,7 +430,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `int` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
                 data => error(
@@ -444,7 +442,7 @@ impl<'a> Interpreter<'a> {
                         data.type_as_str()
                     ),
                     "a value of type `int` was expected",
-                    pos..pos,
+                    pos,
                 ),
             },
             Token::IsEqual => match lhs {
@@ -459,7 +457,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `String` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
                 Data::Integer(n) => match rhs {
@@ -473,7 +471,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `int` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
                 Data::Bool(b) => match rhs {
@@ -487,7 +485,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `bool` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
             },
@@ -503,7 +501,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `String` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
                 Data::Integer(n) => match rhs {
@@ -517,7 +515,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `int` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
                 Data::Bool(b) => match rhs {
@@ -531,7 +529,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `bool` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
             },
@@ -547,7 +545,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `String` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
                 Data::Integer(n) => match rhs {
@@ -561,7 +559,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `int` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
                 Data::Bool(b) => match rhs {
@@ -575,7 +573,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `bool` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
             },
@@ -591,7 +589,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `String` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
                 Data::Integer(n) => match rhs {
@@ -605,7 +603,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `int` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
                 Data::Bool(b) => match rhs {
@@ -619,7 +617,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `bool` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
             },
@@ -635,7 +633,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `String` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
                 Data::Integer(n) => match rhs {
@@ -649,7 +647,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `int` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
                 Data::Bool(b) => match rhs {
@@ -663,7 +661,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `bool` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
             },
@@ -679,7 +677,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `String` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
                 Data::Integer(n) => match rhs {
@@ -693,7 +691,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `int` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
                 Data::Bool(b) => match rhs {
@@ -707,7 +705,7 @@ impl<'a> Interpreter<'a> {
                             data.type_as_str()
                         ),
                         "a value of type `bool` was expected",
-                        pos..pos,
+                        pos,
                     ),
                 },
             },

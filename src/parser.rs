@@ -125,7 +125,7 @@ impl<'a> Parser<'a> {
                 }
             } else {
                 match &token.0 {
-                    Token::Break => nodes.push((AstNode::Break, token.1)),
+                    Token::Break => nodes.push((AstNode::Break, token.1..token.0.len())),
                     Token::Return => loop {
                         let token = tokens.get(pos);
 
@@ -145,7 +145,7 @@ impl<'a> Parser<'a> {
 
                         pos += 1;
                     },
-                    Token::Exit => nodes.push((AstNode::Exit, token.1)),
+                    Token::Exit => nodes.push((AstNode::Exit, token.1..token.0.len())),
                     Token::Semicolon => {}
                     t => {
                         error(
@@ -154,7 +154,7 @@ impl<'a> Parser<'a> {
                             "0001",
                             &format!("token `{}` was not expected here", t.as_string()),
                             &format!("token `{}` was not expected here", t.as_string()),
-                            token.1..token.1 + token.0.size(),
+                            &(token.1..token.1 + token.0.len()),
                         );
                     }
                 }
@@ -171,7 +171,7 @@ impl<'a> Parser<'a> {
 
         let token = *stream.next()?;
 
-        let node: (AstNode, usize) = if token.0 == Token::Let {
+        let node: (AstNode, Range<usize>) = if token.0 == Token::Let {
             let t = &stream.next()?;
             if let Token::Identifier(ident) = &t.0 {
                 let t = stream.next()?;
@@ -182,7 +182,7 @@ impl<'a> Parser<'a> {
                         "0001",
                         &format!("expected `=` found {}", t.0.as_string()),
                         "use `=` here",
-                        t.1 - 1..t.1 + t.0.size() - 1,
+                        &(t.1 - 1..t.1 + t.0.len() - 1),
                     );
                 };
 
@@ -197,7 +197,7 @@ impl<'a> Parser<'a> {
                         "0001",
                         &format!("expected `;` found {}", t.0.as_string()),
                         "use `;` here",
-                        t.1 - 1..t.1 + t.0.size() - 1,
+                        &(t.1 - 1..t.1 + t.0.len() - 1),
                     );
                 }
 
@@ -205,7 +205,7 @@ impl<'a> Parser<'a> {
 
                 let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
 
-                (AstNode::Assignment(ident.to_string(), expression), token.1)
+                (AstNode::Assignment(ident.to_string(), expression), token.1..t.1)
             } else {
                 error(
                     self.name,
@@ -213,7 +213,7 @@ impl<'a> Parser<'a> {
                     "0001",
                     &format!("expected identifier found {}", t.0.as_string()),
                     "use an identifier here",
-                    t.1 - 1..t.1 + t.0.size() - 1,
+                    &(t.1 - 1..t.1 + t.0.len() - 1),
                 );
             }
         } else if let Token::Identifier(ident) = &token.0 {
@@ -226,7 +226,7 @@ impl<'a> Parser<'a> {
                     "0001",
                     &format!("unexpected punctuator {}", t.0.as_string()),
                     "for declaring a value `=` should be used",
-                    t.1 - 1..t.1 + t.0.size() - 1,
+                    &(t.1 - 1..t.1 + t.0.len() - 1),
                 );
             };
 
@@ -241,7 +241,7 @@ impl<'a> Parser<'a> {
                     "0001",
                     &format!("expected `;` found {}", t.0.as_string()),
                     "use `;` here",
-                    t.1 - 1..t.1 + t.0.size() - 1,
+                    &(t.1 - 1..t.1 + t.0.len() - 1),
                 );
             }
 
@@ -251,7 +251,7 @@ impl<'a> Parser<'a> {
 
             (
                 AstNode::ReAssignment(ident.to_string(), expression),
-                token.1,
+                token.1..t.1,
             )
         } else if token.0 == Token::If {
             let mut tokens = vec![];
@@ -279,7 +279,7 @@ impl<'a> Parser<'a> {
                     "0001",
                     &format!("expected `}}` found {}", t.0.as_string()),
                     "use `}` here",
-                    t.1 - 1..t.1 + t.0.size() - 1,
+                    &(t.1 - 1..t.1 + t.0.len() - 1),
                 );
             }
 
@@ -289,7 +289,7 @@ impl<'a> Parser<'a> {
 
             (
                 AstNode::If(expression, self.match_tokens(statements)?),
-                token.1 + 2,
+                token.1..t.1,
             )
         } else if token.0 == Token::Loop {
             let mut statements = vec![];
@@ -303,7 +303,7 @@ impl<'a> Parser<'a> {
                     "0001",
                     &format!("expected `{{` found {}", t.0.as_string()),
                     "use `{` here",
-                    t.1 - 1..t.1 + t.0.size() - 1,
+                    &(t.1 - 1..t.1 + t.0.len() - 1),
                 );
             };
 
@@ -320,11 +320,11 @@ impl<'a> Parser<'a> {
                     "0001",
                     &format!("expected `}}` found {}", t.0.as_string()),
                     "use `}` here",
-                    t.1 - 1..t.1 + t.0.size() - 1,
+                    &(t.1 - 1..t.1 + t.0.len() - 1),
                 );
             };
 
-            (AstNode::Loop(self.match_tokens(statements)?), token.1 + 4)
+            (AstNode::Loop(self.match_tokens(statements)?), token.1..t.1)
         } else if let Token::FunctionName(ident) = &token.0 {
             let t = &stream.next()?;
             if t.0 != Token::LParen {
@@ -334,13 +334,15 @@ impl<'a> Parser<'a> {
                     "0001",
                     &format!("expected `(` found {}", t.0.as_string()),
                     "use `(` here",
-                    t.1 - 1..t.1 + t.0.size() - 1,
+                    &(t.1 - 1..t.1 + t.0.len() - 1),
                 );
             };
 
             let tokens = stream.map(|f| f.to_owned()).collect::<Vec<_>>();
             let mut params = vec![];
             let mut expression = vec![];
+
+            let mut end = 0;
 
             for token in tokens {
                 if token.0 == Token::RParen {
@@ -350,6 +352,7 @@ impl<'a> Parser<'a> {
 
                         params.push(data);
                     }
+                    end = token.1;
                     break;
                 }
 
@@ -365,7 +368,7 @@ impl<'a> Parser<'a> {
                 expression.push(token);
             }
 
-            (AstNode::FunctionCall(ident.to_string(), params), token.1)
+            (AstNode::FunctionCall(ident.to_string(), params), token.1..end)
         } else if token.0 == Token::Fn {
             let t = &stream.next()?;
             if let Token::FunctionName(name) = &t.0 {
@@ -402,7 +405,7 @@ impl<'a> Parser<'a> {
                         "0001",
                         &format!("expected `{{` found {}", t.0.as_string()),
                         "use `{` here",
-                        t.1 - 1..t.1 + t.0.size() - 1,
+                        &(t.1 - 1..t.1 + t.0.len() - 1),
                     );
                 };
 
@@ -429,7 +432,7 @@ impl<'a> Parser<'a> {
                         "0001",
                         &format!("expected `}}` found {}", t.0.as_string()),
                         "use `}` here",
-                        t.1 - 1..t.1 + t.0.size() - 1,
+                        &(t.1 - 1..t.1 + t.0.len() - 1),
                     );
                 };
 
@@ -439,7 +442,7 @@ impl<'a> Parser<'a> {
                         params,
                         self.match_tokens(statements)?,
                     ),
-                    token.1 + 2,
+                    token.1..t.1,
                 )
             } else {
                 error(
@@ -448,7 +451,7 @@ impl<'a> Parser<'a> {
                     "0001",
                     &format!("expected name of function found {}", t.0.as_string()),
                     "use function name here",
-                    t.1 - 1..t.1 + t.0.size() - 1,
+                    &(t.1 - 1..t.1 + t.0.len() - 1),
                 );
             }
         } else if token.0 == Token::Return {
@@ -463,7 +466,7 @@ impl<'a> Parser<'a> {
                     "0001",
                     &format!("expected `;` found {}", t.0.as_string()),
                     "use `;` here",
-                    t.1 - 1..t.1 + t.0.size() - 1,
+                    &(t.1 - 1..t.1 + t.0.len() - 1),
                 );
             }
 
@@ -471,7 +474,7 @@ impl<'a> Parser<'a> {
 
             let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
 
-            (AstNode::Return(expression), token.1)
+            (AstNode::Return(expression), token.1..t.1)
         } else {
             error(
                 self.name,
@@ -479,7 +482,7 @@ impl<'a> Parser<'a> {
                 "0001",
                 &format!("{} was not expected", token.0.as_string()),
                 "did not expect this",
-                token.1 - 1..token.1 + token.0.size(),
+                &(token.1 - 1..token.1 + token.0.len()),
             );
         };
 
@@ -526,7 +529,7 @@ impl<'a> Parser<'a> {
                         "0001",
                         &format!("expected `(` found {}", t.0.as_string()),
                         "use `(` here",
-                        t.1 - 1..t.1 + t.0.size() - 1,
+                        &(t.1 - 1..t.1 + t.0.len() - 1),
                     );
                 };
 
@@ -622,7 +625,7 @@ impl<'a> Parser<'a> {
                 "0003",
                 "could not parse expression",
                 "expression couldn't be parsed",
-                token.1..token.1,
+                &(token.1..token.1),
             );
         }
 
@@ -650,7 +653,7 @@ impl<'a> Parser<'a> {
                     "0001",
                     &format!("expected an operator found {}", op.0.as_string()),
                     "use an operator here",
-                    op.1..op.1 + op.0.size(),
+                    &(op.1..op.1 + op.0.len()),
                 );
             }
         }

@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use crate::ast::AstNode;
 
 #[derive(Clone, Debug)]
@@ -21,11 +23,11 @@ impl Data {
 pub struct Function {
     pub name: String,
     pub params: Vec<String>,
-    pub statements: Vec<(AstNode, usize)>,
+    pub statements: Vec<(AstNode, Range<usize>)>,
 }
 
 impl Function {
-    pub fn new(name: String, params: Vec<String>, statements: Vec<(AstNode, usize)>) -> Self {
+    pub fn new(name: String, params: Vec<String>, statements: Vec<(AstNode, Range<usize>)>) -> Self {
         Self {
             name,
             params,

@@ -105,7 +105,7 @@ impl<'a> Lexer<'a> {
                     token.push(ch);
                 }
                 let t = Token::Str(token);
-                let size = t.size();
+                let size = t.len();
                 self.tokens.push((t, self.at - size));
                 continue;
             } else if ch.is_numeric() {
@@ -137,7 +137,7 @@ impl<'a> Lexer<'a> {
                     token.push(ch);
                 }
                 let t = Token::Integer(token.parse::<i64>().unwrap());
-                let size = t.size();
+                let size = t.len();
                 self.tokens.push((t, self.at - size));
                 continue;
             } else if ['+', '-', '*', '/', '^', '!', '=', '>', '<'].contains(&ch) {
@@ -257,7 +257,7 @@ impl<'a> Lexer<'a> {
                     }
                     _ => unimplemented!(),
                 };
-                let size = t.size();
+                let size = t.len();
                 self.tokens.push((t, self.at - size))
             } else {
                 let t = match ch {
@@ -275,11 +275,11 @@ impl<'a> Lexer<'a> {
                             "0001",
                             &format!("character `{ch}` was not expected here"),
                             &format!("character `{ch}` was not expected here"),
-                            self.at..self.at + 1,
+                            &(self.at..self.at + 1),
                         )
                     }
                 };
-                let size = t.size();
+                let size = t.len();
                 self.tokens.push((t, self.at - size))
             }
 
@@ -311,7 +311,7 @@ impl<'a> Lexer<'a> {
                         }
                     }
                 };
-                let size = t.size();
+                let size = t.len();
                 self.tokens.push((t, self.at - size))
             }
         }

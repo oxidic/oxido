@@ -119,8 +119,8 @@ fn run(name: String, contents: String, config: Config) {
         return;
     }
 
-    let mut interpreter = interpreter::Interpreter::new(ast.to_vec(), &name, &contents);
-    interpreter.run();
+    let mut interpreter = interpreter::Interpreter::new(&name, &contents);
+    interpreter.run(ast.to_vec());
 
     if config.debug || config.time {
         let duration = main.elapsed();

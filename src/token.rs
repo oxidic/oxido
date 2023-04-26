@@ -82,7 +82,7 @@ impl Token {
         }
     }
 
-    pub fn size(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.as_string().len()
     }
 }
