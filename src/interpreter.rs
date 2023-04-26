@@ -171,6 +171,73 @@ impl<'a> Interpreter<'a> {
         }
     }
 
+    pub fn parse_function(&mut self, f: String, args: Vec<Expression>, pos: usize) -> Data {
+        if StandardLibrary::contains(&f) {
+            return match StandardLibrary::call(
+                &f,
+                args.iter()
+                    .map(|f| self.parse_expression(f.clone(), pos))
+                    .collect::<Vec<_>>(),
+            ) {
+                Some(data) => data,
+                None => error(
+                    self.name,
+                    self.file,
+                    "0004",
+                    "function does not return a value",
+                    "function does not a return a value",
+                    pos..pos,
+                ),
+            };
+        }
+        let function = self.functions.get(&*f).unwrap().to_owned();
+
+        if args.len() != function.params.len() {
+            error(
+                self.name,
+                self.file,
+                "0004",
+                "not enough arguments were passed",
+                &format!(
+                    "{} arguments were expected but {} were passed",
+                    function.params.len(),
+                    args.len()
+                ),
+                pos..pos,
+            );
+        }
+
+        for (i, arg) in args.iter().enumerate() {
+            let param = function.params.get(i).unwrap();
+
+            let data = self.parse_expression(arg.to_owned(), pos);
+
+            self.variables.insert(param.to_string(), data);
+        }
+
+        let mut stream = function.statements.into_iter().peekable();
+        loop {
+            if stream.peek().is_none() {
+                error(
+                    self.name,
+                    self.file,
+                    "0004",
+                    &format!("function {f} did not return a value"),
+                    "expected function to return a value",
+                    pos..pos,
+                );
+            }
+
+            self.match_node(stream.next().unwrap());
+
+            if self.returned.is_some() {
+                let data = self.returned.clone().unwrap();
+                self.returned = None;
+                break data;
+            }
+        }
+    }
+
     pub fn parse_expression(&mut self, expr: Expression, pos: usize) -> Data {
         match expr {
             Expression::BinaryOperation(lhs, op, rhs) => {
@@ -181,70 +248,7 @@ impl<'a> Interpreter<'a> {
             Expression::Bool(b) => Data::Bool(b),
             Expression::Str(s) => Data::Str(s),
             Expression::FunctionCall(f, args) => {
-                if StandardLibrary::contains(&f) {
-                    return match StandardLibrary::call(
-                        &f,
-                        args.iter()
-                            .map(|f| self.parse_expression(f.clone(), pos))
-                            .collect::<Vec<_>>(),
-                    ) {
-                        Some(data) => data,
-                        None => error(
-                            self.name,
-                            self.file,
-                            "0004",
-                            "function does not return a value",
-                            "function does not a return a value",
-                            pos..pos,
-                        ),
-                    };
-                }
-                let function = self.functions.get(&*f).unwrap().to_owned();
-
-                if args.len() != function.params.len() {
-                    error(
-                        self.name,
-                        self.file,
-                        "0004",
-                        "not enough arguments were passed",
-                        &format!(
-                            "{} arguments were expected but {} were passed",
-                            function.params.len(),
-                            args.len()
-                        ),
-                        pos..pos,
-                    );
-                }
-
-                for (i, arg) in args.iter().enumerate() {
-                    let param = function.params.get(i).unwrap();
-
-                    let data = self.parse_expression(arg.to_owned(), pos);
-
-                    self.variables.insert(param.to_string(), data);
-                }
-
-                let mut stream = function.statements.into_iter().peekable();
-                loop {
-                    if stream.peek().is_none() {
-                        error(
-                            self.name,
-                            self.file,
-                            "0004",
-                            &format!("function {f} did not return a value"),
-                            "expected function to return a value",
-                            pos..pos,
-                        );
-                    }
-
-                    self.match_node(stream.next().unwrap());
-
-                    if self.returned.is_some() {
-                        let data = self.returned.clone().unwrap();
-                        self.returned = None;
-                        break data;
-                    }
-                }
+                self.parse_function(f, args, pos)
             }
         }
     }
@@ -277,71 +281,7 @@ impl<'a> Interpreter<'a> {
             Expression::Str(s) => Data::Str(s),
             Expression::Bool(b) => Data::Bool(b),
             Expression::FunctionCall(f, args) => {
-                if StandardLibrary::contains(&f) {
-                    return match StandardLibrary::call(
-                        &f,
-                        args.iter()
-                            .map(|f| self.parse_expression(f.clone(), pos))
-                            .collect::<Vec<_>>(),
-                    ) {
-                        Some(data) => data,
-                        None => error(
-                            self.name,
-                            self.file,
-                            "0004",
-                            "function does not return a value",
-                            "function does not a return a value",
-                            pos..pos,
-                        ),
-                    };
-                }
-                let function = self.functions.get(&*f).unwrap().to_owned();
-
-                if args.len() != function.params.len() {
-                    error(
-                        self.name,
-                        self.file,
-                        "0004",
-                        "not enough arguments were passed",
-                        &format!(
-                            "{} arguments were expected but {} were passed",
-                            function.params.len(),
-                            args.len()
-                        ),
-                        pos..pos,
-                    );
-                }
-
-                for (i, arg) in args.iter().enumerate() {
-                    let param = function.params.get(i).unwrap();
-
-                    let data = self.parse_expression(arg.to_owned(), pos);
-
-                    self.variables.insert(param.to_string(), data);
-                }
-
-                let mut stream = function.statements.into_iter().peekable();
-
-                loop {
-                    if stream.peek().is_none() {
-                        error(
-                            self.name,
-                            self.file,
-                            "0004",
-                            &format!("function {f} did not return a value"),
-                            "expected function to return a value",
-                            pos..pos,
-                        );
-                    }
-
-                    self.match_node(stream.next().unwrap());
-
-                    if self.returned.is_some() {
-                        let data = self.returned.clone().unwrap();
-                        self.returned = None;
-                        break data;
-                    }
-                }
+                self.parse_function(f, args, pos)
             }
         };
         let operator = op;
@@ -354,70 +294,7 @@ impl<'a> Interpreter<'a> {
             Expression::Str(s) => Data::Str(s),
             Expression::Bool(b) => Data::Bool(b),
             Expression::FunctionCall(f, args) => {
-                if StandardLibrary::contains(&f) {
-                    return match StandardLibrary::call(
-                        &f,
-                        args.iter()
-                            .map(|f| self.parse_expression(f.clone(), pos))
-                            .collect::<Vec<_>>(),
-                    ) {
-                        Some(data) => data,
-                        None => error(
-                            self.name,
-                            self.file,
-                            "0004",
-                            "function does not return a value",
-                            "function does not a return a value",
-                            pos..pos,
-                        ),
-                    };
-                }
-                let function = self.functions.get(&*f).unwrap().to_owned();
-
-                if args.len() != function.params.len() {
-                    error(
-                        self.name,
-                        self.file,
-                        "0004",
-                        "not enough arguments were passed",
-                        &format!(
-                            "{} arguments were expected but {} were passed",
-                            function.params.len(),
-                            args.len()
-                        ),
-                        pos..pos,
-                    );
-                }
-
-                for (i, arg) in args.iter().enumerate() {
-                    let param = function.params.get(i).unwrap();
-
-                    let data = self.parse_expression(arg.to_owned(), pos);
-
-                    self.variables.insert(param.to_string(), data);
-                }
-
-                let mut stream = function.statements.into_iter().peekable();
-                loop {
-                    if stream.peek().is_none() {
-                        error(
-                            self.name,
-                            self.file,
-                            "0004",
-                            &format!("function {f} did not return a value"),
-                            "expected function to return a value",
-                            pos..pos,
-                        );
-                    }
-
-                    self.match_node(stream.next().unwrap());
-
-                    if self.returned.is_some() {
-                        let data = self.returned.clone().unwrap();
-                        self.returned = None;
-                        break data;
-                    }
-                }
+                self.parse_function(f, args, pos)
             }
         };
         match operator {

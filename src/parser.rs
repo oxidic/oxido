@@ -1,4 +1,4 @@
-use std::{iter::Peekable, vec::IntoIter};
+use std::{iter::Peekable, vec::IntoIter, ops::Range};
 
 use crate::{
     ast::{AstNode, Expression},
@@ -9,23 +9,22 @@ use crate::{
 pub struct Parser<'a> {
     name: &'a str,
     file: &'a str,
-    tokens: Vec<(Token, usize)>,
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(tokens: Vec<(Token, usize)>, name: &'a str, file: &'a str) -> Self {
-        Self { name, file, tokens }
+    pub fn new(name: &'a str, file: &'a str) -> Self {
+        Self { name, file }
     }
 
-    pub fn run(&'a self) -> Option<Vec<(AstNode, usize)>> {
-        let ast = self.match_tokens(self.tokens.clone())?;
+    pub fn run(&'a self, tokens: Vec<(Token, usize)>) -> Option<Vec<(AstNode, Range<usize>)>> {
+        let ast = self.match_tokens(tokens)?;
 
         Some(ast)
     }
 
-    pub fn match_tokens(&'a self, tokens: Vec<(Token, usize)>) -> Option<Vec<(AstNode, usize)>> {
+    pub fn match_tokens(&'a self, tokens: Vec<(Token, usize)>) -> Option<Vec<(AstNode, Range<usize>)>> {
         let mut pos = 0;
-        let mut nodes: Vec<(AstNode, usize)> = vec![];
+        let mut nodes: Vec<(AstNode, Range<usize>)> = vec![];
 
         loop {
             let mut statements = vec![];
@@ -167,7 +166,7 @@ impl<'a> Parser<'a> {
         Some(nodes)
     }
 
-    pub fn parse(&'a self, tokens: Vec<&'a (Token, usize)>) -> Option<(AstNode, usize)> {
+    pub fn parse(&'a self, tokens: Vec<&'a (Token, usize)>) -> Option<(AstNode, Range<usize>)> {
         let mut stream = tokens.iter().peekable();
 
         let token = *stream.next()?;

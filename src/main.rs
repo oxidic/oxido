@@ -108,8 +108,8 @@ fn run(name: String, contents: String, config: Config) {
         println!("LEXER: {tokens:?}\n\nTIME: {duration:?}\n");
     }
 
-    let parser = parser::Parser::new(tokens.to_vec(), &name, &contents);
-    let ast = parser.run().unwrap();
+    let parser = parser::Parser::new(&name, &contents);
+    let ast = parser.run(tokens.to_vec()).unwrap();
 
     if config.debug {
         let duration = main.elapsed();
