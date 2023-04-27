@@ -355,21 +355,20 @@ impl<'a> Parser<'a> {
                 if token.0 == Token::LParen {
                     depth += 1;
                 }
+
                 if token.0 == Token::RParen {
                     depth -= 1;
-                    if !expression.is_empty() {
-                        if depth > 0 {
-                            expression.push(token);
-                        }
-                        let (data, _) =
-                            self.pratt_parser(expression.clone().into_iter().peekable(), 0);
 
-                        params.push(data);
-
-                        expression.clear();
-                        continue;
-                    }
                     if depth == 0 {
+                        if !expression.is_empty() {
+                            let (data, _) =
+                                self.pratt_parser(expression.clone().into_iter().peekable(), 0);
+
+                            params.push(data);
+
+                            expression.clear();
+                            continue;
+                        }
                         end = token.1;
                         break;
                     }
@@ -381,6 +380,7 @@ impl<'a> Parser<'a> {
                     params.push(data);
 
                     expression.clear();
+
                     continue;
                 }
 
@@ -516,9 +516,6 @@ impl<'a> Parser<'a> {
         mut lexer: Peekable<IntoIter<&'a (Token, usize)>>,
         prec: u16,
     ) -> (Expression, Peekable<IntoIter<&'a (Token, usize)>>) {
-        if lexer.clone().next().is_none() {
-            return (Expression::Str(String::new()), lexer);
-        }
         let token = &lexer.next().unwrap();
         let mut expr: Option<Expression> = None;
 
