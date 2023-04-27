@@ -1,7 +1,0 @@
-fn fib(n) {
-    print("lol");
-    return 99;
-}
-
-fib(0);
-print(fib(0));
