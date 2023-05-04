@@ -3,7 +3,7 @@
 **Table of Contents**:
 
 - [Oxido](#oxido)
-  - [Extension](#extension)
+  - [Files](#Files)
   - [Installation](#installation)
   - [Uninstallation](#uninstallation)
   - [Usage](#usage)
@@ -11,7 +11,6 @@
     - [Data types](#data-types)
     - [Variables](#variables)
     - [Reassignments](#reassignments)
-    - [Printing](#printing)
     - [If statements](#if-statements)
     - [Loop statements](#loop-statements)
     - [Functions](#functions)
@@ -19,41 +18,43 @@
 
 Oxido is a dynamic interpreted programming language basing most of its syntax on Rust.
 
-## Extension:
+## Files:
 
-The files may end with the `o` extension, however the extension is ignored.
+The files may end with the `oxi` extension, however the extension is ignored.
+
+Oxido uses waterfall approach to files, for a directory/file `example`, Oxido will run the first file in order of, `example`, `example/main.oxi`, `example/src/main.oxi`.
 
 ## Installation
 
-[Oxup](https://github.com/oxidite/oxup), the official installer can be used to install the latest release from GitHub.
+[Oxate](https://github.com/oxidite/oxate), the official installer can be used to install the latest release from GitHub.
 
 ```bash
-oxup install
+oxate install
 ```
 
 ## Uninstallation
 
-You can use `oxup` to remove the current installation.
+You can use `oxate` to remove the current installation.
 
 ```bash
-oxup uninstall
+oxate uninstall
 ```
 
 ## Usage
 
-You can run an Oxido file using the `oxido` command. The files may end with the `o` extension, however Oxido ignores the extension, and runs the file as-is.
+You can run an Oxido file using the `oxido` command. The files may end with the `oxi` extension, however Oxido ignores the extension, and runs the file as-is.
 
 ```bash
-oxido <filename>
+oxido <FILE> [OPTIONS]
 ```
 
 For example:
 
 ```bash
-oxido ./main.o
+oxido main.oxi
 ```
 
-Conventionally, base Oxido files are named `main.o`.
+Conventionally, Oxido files are named `main.oxi`.
 
 ## Syntax
 
@@ -67,38 +68,27 @@ Conventionally, base Oxido files are named `main.o`.
 
 ### Variables
 
-Variables are declared by the `let` keyword, followed by a space and the identifier, which must pass the regex `[A-Za-z]+`, followed by an equals sign and the value which must be a single string or an integer or an expression of integers, or a variable itself.
+Variables are declared by the `let` keyword, followed by the identifier, which must pass the regex `[A-Za-z]+`, followed by the data type and an equal sign and the expression.
 
 For example:
 
 ```rs
-let a = "Hi mom!";
-let a = 5;
-let a = 5 * 5;
-let f = factorial(5);
+let a: str = "Hi mom!";
+let a: int = 5;
+let a: int = 5 * 5;
+let f: int = factorial(5);
 ```
 
 ### Reassignments
 
-Reassignments are done stating the identifier, which must pass the regex `[A-Za-z]+`, followed by an equals sign and the value which must be a single string or an integer or an expression of integers, or a variable itself.
+Reassignments are the same as assignments with the condition that `let` keyword is not used and the variable must have been declared before. Data types are enfored while reassigning values.
 
 ```rs
-let a = 0;
-a = "Hi mom!";
+let a: int = 0;
 a = 5;
 a = 5 * 5;
 a = factorial(5);
-```
-
-### Printing
-
-The `print` keyword can be used to print variables, expressions and strings to stdout, the value must be inside two parentheses.
-
-```rs
-print(a);
-print(5);
-print(5 * 5);
-print("Hi mom!");
+a = "Hi mom!"; // errors
 ```
 
 ### If statements
@@ -137,8 +127,8 @@ Funcitons store the given conditions until they are called. They are declared wi
 ```rs
 let text = "Hi mom!";
 
-fn message(text) {
-    print(text);
+fn message(x: str) {
+    print(x);
 }
 
 message(text);
@@ -153,3 +143,31 @@ print("Hi mom!")
 
 exit
 ```
+
+## Standard Library
+
+Oxido includes a standard library which can be used for basic functions.
+
+### IO
+
+#### print()
+
+Print the given inputs to stdout.
+
+#### println()
+
+Print the given inputs to stdout and leave a newline.
+
+### Types
+
+#### str()
+
+Convert the value to str data type
+
+#### int()
+
+Convert the value to int data type
+
+#### bool()
+
+Convert the value to bool data type
