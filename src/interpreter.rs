@@ -49,7 +49,7 @@ impl<'a> Interpreter<'a> {
                 let data = self.parse_expression(expression, &node.1);
                 self.variables.insert(ident, Variable::new(datatype, data));
             }
-            AstNode::ReAssignment(ident, datatype, expression) => {
+            AstNode::ReAssignment(ident, expression) => {
                 if !self.variables.contains_key(&ident) {
                     error(
                         self.name,
@@ -60,7 +60,22 @@ impl<'a> Interpreter<'a> {
                         &node.1,
                     );
                 }
+                let datatype = self.variables.get(&ident).unwrap().datatype;
                 let data = self.parse_expression(expression, &node.1);
+                if datatype != data.r#type() {
+                    error(
+                        self.name,
+                        self.file,
+                        "E00011",
+                        "incorrect data type",
+                        &format!(
+                            "mismatched data types expected {} found {}",
+                            datatype,
+                            data.to_string()
+                        ),
+                        &node.1,
+                    )
+                }
                 self.variables.insert(ident, Variable::new(datatype, data));
             }
             AstNode::If(condition, statements) => {

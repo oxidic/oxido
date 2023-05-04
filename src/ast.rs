@@ -6,7 +6,7 @@ pub type Ast = Vec<(AstNode, Range<usize>)>;
 #[derive(Clone, Debug)]
 pub enum AstNode {
     Assignment(String, DataType, Expression),
-    ReAssignment(String, DataType, Expression),
+    ReAssignment(String, Expression),
     If(Expression, Ast),
     Loop(Ast),
     FunctionCall(String, Vec<Expression>),

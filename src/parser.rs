@@ -203,7 +203,7 @@ impl<'a> Parser<'a> {
                         "E0010",
                         "expected data type",
                         "expected data type",
-                        &(t.1..t.1 + t.0.len()),
+                        &(t.1 - 1..t.1 + t.0.len() - 1),
                     )
                 };
 
@@ -230,24 +230,10 @@ impl<'a> Parser<'a> {
                     "0001",
                     &format!("expected identifier found {}", t.0.as_string()),
                     "use an identifier here",
-                    &(t.1..t.1 + t.0.len()),
+                    &(t.1 - 1..t.1 + t.0.len() - 1),
                 );
             }
         } else if let Token::Identifier(ident) = &token.0 {
-            let t = stream.next()?;
-            let datatype = if let Token::DataType(datatype) = t.0 {
-                datatype
-            } else {
-                error(
-                    self.name,
-                    self.file,
-                    "E0010",
-                    "expected data type",
-                    "expected data type",
-                    &(t.1..t.1 + t.0.len()),
-                )
-            };
-
             self.check(stream.next()?, Token::Equal);
 
             let mut tokens = stream.collect::<Vec<_>>();
@@ -261,7 +247,7 @@ impl<'a> Parser<'a> {
             let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
 
             (
-                AstNode::ReAssignment(ident.to_string(), datatype, expression),
+                AstNode::ReAssignment(ident.to_string(), expression),
                 token.1..t.1,
             )
         } else if token.0 == Token::If {
@@ -421,7 +407,7 @@ impl<'a> Parser<'a> {
                     "0001",
                     &format!("expected name of function found {}", t.0.as_string()),
                     "use function name here",
-                    &(t.1..t.1 + t.0.len()),
+                    &(t.1 - 1..t.1 + t.0.len() - 1),
                 );
             }
         } else if token.0 == Token::Return {
@@ -514,7 +500,7 @@ impl<'a> Parser<'a> {
                         "0001",
                         &format!("expected `(` found {}", t.0.as_string()),
                         "use `(` here",
-                        &(t.1..t.1 + t.0.len()),
+                        &(t.1 - 1..t.1 + t.0.len() - 1),
                     );
                 };
 
