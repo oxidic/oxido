@@ -1,6 +1,6 @@
 [package]
 name = "oxido"
-version = "2.1.2"
+version = "2.2.2"
 edition = "2021"
 
 [profile.release]
@@ -14,6 +14,3 @@ debug = true
 [dependencies]
 clap = { version = "3.1.18", features = ["derive"] }
 codespan-reporting = "0.11.1"
-inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = [
-    "llvm14-0",
-] }

@@ -5,7 +5,7 @@ use std::process::exit;
 use std::time::Instant;
 
 mod ast;
-mod datatype;
+mod data;
 mod error;
 mod interpreter;
 mod lexer;

@@ -1,5 +1,9 @@
 use std::fmt::Debug;
 
+use crate::data::DataType;
+
+pub type Tokens = Vec<(Token, usize)>;
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Token {
     Let,
@@ -23,9 +27,10 @@ pub enum Token {
 
     Identifier(String),
     FunctionName(String),
+    DataType(DataType),
 
     Str(String),
-    Integer(i64),
+    Int(i64),
     Bool(bool),
 
     Semicolon,
@@ -64,9 +69,16 @@ impl Token {
 
             Token::Identifier(ident) => ident.to_string(),
             Token::FunctionName(fname) => fname.to_string(),
+            Token::DataType(datatype) => {
+                match datatype {
+                    DataType::Str => String::from("Str"),
+                    DataType::Int => String::from("Int"),
+                    DataType::Bool => String::from("Bool"),
+                }
+            },
 
             Token::Str(string) => string.to_string(),
-            Token::Integer(i) => format!("{i}"),
+            Token::Int(i) => format!("{i}"),
             Token::Bool(b) => format!("{b}"),
 
             Token::Semicolon => String::from(";"),

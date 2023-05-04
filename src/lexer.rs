@@ -1,4 +1,4 @@
-use crate::{error::error, token::Token};
+use crate::{error::error, token::{Token, Tokens}, data::DataType};
 
 pub struct Lexer<'a> {
     name: &'a str,
@@ -17,7 +17,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub fn run(&mut self) -> Option<&Vec<(Token, usize)>> {
+    pub fn run(&mut self) -> Option<&Tokens> {
         let file = self.file.split("").collect::<Vec<&'a str>>();
 
         let mut stream = file.iter().peekable();
@@ -136,9 +136,61 @@ impl<'a> Lexer<'a> {
 
                     token.push(ch);
                 }
-                let t = Token::Integer(token.parse::<i64>().unwrap());
+                let t = Token::Int(token.parse::<i64>().unwrap());
                 let size = t.len();
                 self.tokens.push((t, self.at - size));
+                continue;
+            } else if ch == ':' {
+                loop {
+                    let ch = stream.peek();
+                    self.at += 1;
+
+                    if ch.is_none() {
+                        if self.at > size {
+                            break;
+                        }
+                        stream.next();
+                        continue;
+                    }
+
+                    if ch?.chars().next()?.is_whitespace() {
+                        stream.next();
+                        continue;
+                    }
+
+                    if !ch?.chars().next()?.is_alphabetic() {
+                        self.at -= 1;
+                        break;
+                    }
+
+                    let ch = if ch?.is_empty() {
+                        stream.next();
+                        continue;
+                    } else {
+                        stream.next()?.chars().next()?
+                    };
+
+                    token.push(ch);
+                }
+
+                let t = match token.as_str() {
+                    "str" => Token::DataType(DataType::Str),
+                    "int" => Token::DataType(DataType::Int),
+                    "bool" => Token::DataType(DataType::Bool),
+                    _ => error(
+                        self.name,
+                        self.file,
+                        "0001",
+                        &format!("expected datatype found `{ch}`"),
+                        &format!("token `{ch}` was not expected here"),
+                        &(self.at..self.at + 1),
+                    )
+                };
+
+                let size = t.len();
+
+                self.tokens.push((t, self.at - size));
+
                 continue;
             } else if ['+', '-', '*', '/', '^', '!', '=', '>', '<'].contains(&ch) {
                 let t = match ch {
@@ -295,9 +347,7 @@ impl<'a> Lexer<'a> {
                     "true" => Token::Bool(true),
                     "false" => Token::Bool(false),
                     _ => {
-                        if self.tokens.last().is_some()
-                            && self.tokens.last()?.0 == Token::Fn
-                        {
+                        if self.tokens.last().is_some() && self.tokens.last()?.0 == Token::Fn {
                             Token::FunctionName(token)
                         } else {
                             let mut cloned_stream = stream.clone();

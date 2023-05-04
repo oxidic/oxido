@@ -62,7 +62,7 @@ Conventionally, Oxido files are named `main.oxi`.
 
 * String: A string is any value inside `"` (double quotes) passing the regex `\"[A-Za-z0-9 !]+\"`.
 
-* Integer: Integers (no fractions), passing the regex `[0-9]+`.
+* Int: Integers (no fractions), passing the regex `[0-9]+`.
 
 * Bool: `true` or `false`
 
@@ -88,7 +88,7 @@ let a: int = 0;
 a = 5;
 a = 5 * 5;
 a = factorial(5);
-a = "Hi mom!"; // errors
+a = "Hi mom!"; // error: incorrect data type
 ```
 
 ### If statements
@@ -139,9 +139,9 @@ message(text);
 The `exit` keyword can be used to exit the program with the specified exit code
 
 ```rs
-print("Hi mom!")
+print("Hi mom!");
 
-exit
+exit(0);
 ```
 
 ## Standard Library

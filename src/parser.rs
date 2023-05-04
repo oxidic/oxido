@@ -1,9 +1,10 @@
 use std::{iter::Peekable, ops::Range, vec::IntoIter};
 
 use crate::{
-    ast::{AstNode, Expression},
+    ast::{Ast, AstNode, Expression},
+    data::Param,
     error::error,
-    token::Token,
+    token::{Token, Tokens},
 };
 
 pub struct Parser<'a> {
@@ -16,18 +17,15 @@ impl<'a> Parser<'a> {
         Self { name, file }
     }
 
-    pub fn run(&'a self, tokens: Vec<(Token, usize)>) -> Option<Vec<(AstNode, Range<usize>)>> {
+    pub fn run(&'a self, tokens: Tokens) -> Option<Ast> {
         let ast = self.match_tokens(tokens)?;
 
         Some(ast)
     }
 
-    pub fn match_tokens(
-        &'a self,
-        tokens: Vec<(Token, usize)>,
-    ) -> Option<Vec<(AstNode, Range<usize>)>> {
+    pub fn match_tokens(&'a self, tokens: Tokens) -> Option<Ast> {
         let mut pos = 0;
-        let mut nodes: Vec<(AstNode, Range<usize>)> = vec![];
+        let mut nodes: Ast = vec![];
 
         loop {
             let mut statements = vec![];
@@ -148,7 +146,25 @@ impl<'a> Parser<'a> {
 
                         pos += 1;
                     },
-                    Token::Exit => nodes.push((AstNode::Exit, token.1..token.0.len())),
+                    Token::Exit => loop {
+                        let token = tokens.get(pos);
+
+                        if token.is_none() {
+                            break;
+                        }
+
+                        let token = token?;
+
+                        if token.0 == Token::Semicolon {
+                            statements.push(token);
+                            nodes.push(self.parse(statements)?);
+                            break;
+                        }
+
+                        statements.push(token);
+
+                        pos += 1;
+                    },
                     Token::Semicolon => {}
                     t => {
                         error(
@@ -178,38 +194,33 @@ impl<'a> Parser<'a> {
             let t = &stream.next()?;
             if let Token::Identifier(ident) = &t.0 {
                 let t = stream.next()?;
-                if t.0 != Token::Equal {
+                let datatype = if let Token::DataType(datatype) = t.0 {
+                    datatype
+                } else {
                     error(
                         self.name,
                         self.file,
-                        "0001",
-                        &format!("expected `=` found {}", t.0.as_string()),
-                        "use `=` here",
-                        &(t.1 - 1..t.1 + t.0.len() - 1),
-                    );
+                        "E0010",
+                        "expected data type",
+                        "expected data type",
+                        &(t.1..t.1 + t.0.len()),
+                    )
                 };
+
+                self.check(stream.next()?, Token::Equal);
 
                 let mut tokens = stream.collect::<Vec<_>>();
 
                 let t = tokens.pop()?;
 
-                if t.0 != Token::Semicolon {
-                    error(
-                        self.name,
-                        self.file,
-                        "0001",
-                        &format!("expected `;` found {}", t.0.as_string()),
-                        "use `;` here",
-                        &(t.1 - 1..t.1 + t.0.len() - 1),
-                    );
-                }
+                self.check(t, Token::Semicolon);
 
                 let tokens = tokens.iter().map(|f| **f).collect::<Vec<_>>();
 
                 let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
 
                 (
-                    AstNode::Assignment(ident.to_string(), expression),
+                    AstNode::Assignment(ident.to_string(), datatype, expression),
                     token.1..t.1,
                 )
             } else {
@@ -219,44 +230,38 @@ impl<'a> Parser<'a> {
                     "0001",
                     &format!("expected identifier found {}", t.0.as_string()),
                     "use an identifier here",
-                    &(t.1 - 1..t.1 + t.0.len() - 1),
+                    &(t.1..t.1 + t.0.len()),
                 );
             }
         } else if let Token::Identifier(ident) = &token.0 {
-            let t = &stream.next()?;
-
-            if t.0 != Token::Equal {
+            let t = stream.next()?;
+            let datatype = if let Token::DataType(datatype) = t.0 {
+                datatype
+            } else {
                 error(
                     self.name,
                     self.file,
-                    "0001",
-                    &format!("unexpected punctuator {}", t.0.as_string()),
-                    "for declaring a value `=` should be used",
-                    &(t.1 - 1..t.1 + t.0.len() - 1),
-                );
+                    "E0010",
+                    "expected data type",
+                    "expected data type",
+                    &(t.1..t.1 + t.0.len()),
+                )
             };
+
+            self.check(stream.next()?, Token::Equal);
 
             let mut tokens = stream.collect::<Vec<_>>();
 
             let t = tokens.pop()?;
 
-            if t.0 != Token::Semicolon {
-                error(
-                    self.name,
-                    self.file,
-                    "0001",
-                    &format!("expected `;` found {}", t.0.as_string()),
-                    "use `;` here",
-                    &(t.1 - 1..t.1 + t.0.len() - 1),
-                );
-            }
+            self.check(t, Token::Semicolon);
 
             let tokens = tokens.iter().map(|f| **f).collect::<Vec<_>>();
 
             let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
 
             (
-                AstNode::ReAssignment(ident.to_string(), expression),
+                AstNode::ReAssignment(ident.to_string(), datatype, expression),
                 token.1..t.1,
             )
         } else if token.0 == Token::If {
@@ -278,16 +283,7 @@ impl<'a> Parser<'a> {
 
             let t = statements.pop()?;
 
-            if t.0 != Token::RCurly {
-                error(
-                    self.name,
-                    self.file,
-                    "0001",
-                    &format!("expected `}}` found {}", t.0.as_string()),
-                    "use `}` here",
-                    &(t.1 - 1..t.1 + t.0.len() - 1),
-                );
-            }
+            self.check(&t, Token::RCurly);
 
             let tokens = tokens.iter().map(|f| **f).collect::<Vec<_>>();
 
@@ -300,18 +296,7 @@ impl<'a> Parser<'a> {
         } else if token.0 == Token::Loop {
             let mut statements = vec![];
 
-            let t = &stream.next()?;
-
-            if t.0 != Token::LCurly {
-                error(
-                    self.name,
-                    self.file,
-                    "0001",
-                    &format!("expected `{{` found {}", t.0.as_string()),
-                    "use `{` here",
-                    &(t.1 - 1..t.1 + t.0.len() - 1),
-                );
-            };
+            self.check(stream.next()?, Token::LCurly);
 
             for token in stream {
                 statements.push((*token).to_owned());
@@ -319,30 +304,11 @@ impl<'a> Parser<'a> {
 
             let t = statements.pop()?;
 
-            if t.0 != Token::RCurly {
-                error(
-                    self.name,
-                    self.file,
-                    "0001",
-                    &format!("expected `}}` found {}", t.0.as_string()),
-                    "use `}` here",
-                    &(t.1 - 1..t.1 + t.0.len() - 1),
-                );
-            };
+            self.check(&t, Token::RCurly);
 
             (AstNode::Loop(self.match_tokens(statements)?), token.1..t.1)
         } else if let Token::FunctionName(ident) = &token.0 {
-            let t = &stream.next()?;
-            if t.0 != Token::LParen {
-                error(
-                    self.name,
-                    self.file,
-                    "0001",
-                    &format!("expected `(` found {}", t.0.as_string()),
-                    "use `(` here",
-                    &(t.1 - 1..t.1 + t.0.len() - 1),
-                );
-            };
+            self.check(stream.next()?, Token::LParen);
 
             let tokens = stream.map(|f| f.to_owned()).collect::<Vec<_>>();
             let mut params = vec![];
@@ -414,22 +380,13 @@ impl<'a> Parser<'a> {
                     }
 
                     if let Token::Identifier(name) = token {
-                        params.push(name.to_string());
+                        if let Token::DataType(datatype) = stream.next()?.0 {
+                            params.push(Param::new(name.to_string(), datatype));
+                        }
                     }
                 }
 
-                let t = &stream.next()?;
-
-                if t.0 != Token::LCurly {
-                    error(
-                        self.name,
-                        self.file,
-                        "0001",
-                        &format!("expected `{{` found {}", t.0.as_string()),
-                        "use `{` here",
-                        &(t.1 - 1..t.1 + t.0.len() - 1),
-                    );
-                };
+                self.check(stream.next()?, Token::LCurly);
 
                 let mut statements = vec![];
 
@@ -447,16 +404,7 @@ impl<'a> Parser<'a> {
 
                 let t = statements.pop()?;
 
-                if t.0 != Token::RCurly {
-                    error(
-                        self.name,
-                        self.file,
-                        "0001",
-                        &format!("expected `}}` found {}", t.0.as_string()),
-                        "use `}` here",
-                        &(t.1 - 1..t.1 + t.0.len() - 1),
-                    );
-                };
+                self.check(&t, Token::RCurly);
 
                 (
                     AstNode::FunctionDeclaration(
@@ -473,7 +421,7 @@ impl<'a> Parser<'a> {
                     "0001",
                     &format!("expected name of function found {}", t.0.as_string()),
                     "use function name here",
-                    &(t.1 - 1..t.1 + t.0.len() - 1),
+                    &(t.1..t.1 + t.0.len()),
                 );
             }
         } else if token.0 == Token::Return {
@@ -481,22 +429,25 @@ impl<'a> Parser<'a> {
 
             let t = tokens.pop()?;
 
-            if t.0 != Token::Semicolon {
-                error(
-                    self.name,
-                    self.file,
-                    "0001",
-                    &format!("expected `;` found {}", t.0.as_string()),
-                    "use `;` here",
-                    &(t.1 - 1..t.1 + t.0.len() - 1),
-                );
-            }
+            self.check(t, Token::Semicolon);
 
             let tokens = tokens.iter().map(|f| **f).collect::<Vec<_>>();
 
             let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
 
             (AstNode::Return(expression), token.1..t.1)
+        } else if token.0 == Token::Exit {
+            let mut tokens = stream.collect::<Vec<_>>();
+
+            let t = tokens.pop()?;
+
+            self.check(t, Token::Semicolon);
+
+            let tokens = tokens.iter().map(|f| **f).collect::<Vec<_>>();
+
+            let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
+
+            (AstNode::Exit(expression), token.1..t.1)
         } else {
             error(
                 self.name,
@@ -511,12 +462,26 @@ impl<'a> Parser<'a> {
         Some(node)
     }
 
+    pub fn check(&self, t1: &(Token, usize), t2: Token) -> bool {
+        if t1.0 != t2 {
+            error(
+                self.name,
+                self.file,
+                "0001",
+                &format!("expected `{}` found {}", t2.as_string(), t1.0.as_string()),
+                &format!("use `{}` here", t2.as_string()),
+                &(t1.1 - 1..t1.1 + t2.len() - 1),
+            );
+        };
+
+        true
+    }
+
     pub fn pratt_parser(
         &'a self,
         mut lexer: Peekable<IntoIter<&'a (Token, usize)>>,
         prec: u16,
     ) -> (Expression, Peekable<IntoIter<&'a (Token, usize)>>) {
-        println!("{lexer:?}");
         let token = &lexer.next().unwrap();
         let mut expr: Option<Expression> = None;
 
@@ -536,8 +501,8 @@ impl<'a> Parser<'a> {
                 expr = Some(exp);
             }
             Token::Subtraction => {
-                if let Token::Integer(i) = token.0 {
-                    expr = Some(Expression::Integer(-i));
+                if let Token::Int(i) = token.0 {
+                    expr = Some(Expression::Int(-i));
                 }
             }
             Token::FunctionName(f) => {
@@ -549,7 +514,7 @@ impl<'a> Parser<'a> {
                         "0001",
                         &format!("expected `(` found {}", t.0.as_string()),
                         "use `(` here",
-                        &(t.1 - 1..t.1 + t.0.len() - 1),
+                        &(t.1..t.1 + t.0.len()),
                     );
                 };
 
@@ -578,7 +543,7 @@ impl<'a> Parser<'a> {
                 }
 
                 let mut params = vec![];
-                let mut expression: Vec<(Token, usize)> = vec![];
+                let mut expression: Tokens = vec![];
 
                 for token in tokens {
                     if token.0 == Token::RParen {
@@ -607,8 +572,8 @@ impl<'a> Parser<'a> {
                 expr = Some(Expression::FunctionCall(f.to_string(), params));
             }
             _ => {
-                if let Token::Integer(i) = token.0 {
-                    expr = Some(Expression::Integer(i));
+                if let Token::Int(i) = token.0 {
+                    expr = Some(Expression::Int(i));
                 }
             }
         };
@@ -649,8 +614,6 @@ impl<'a> Parser<'a> {
                 &(token.1..token.1),
             );
         }
-
-        println!("{expr:?}");
 
         (expr.unwrap(), lexer)
     }

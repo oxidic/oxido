@@ -1,4 +1,4 @@
-use crate::datatype::Data;
+use crate::data::Data;
 
 pub struct StandardLibrary;
 
@@ -27,19 +27,19 @@ impl StandardLibrary {
 }
 
 mod types {
-    use crate::datatype::Data;
+    use crate::data::Data;
 
     pub fn int(data: Data) -> Data {
         match data {
-            Data::Integer(_) => data,
-            Data::Bool(b) => Data::Integer(b as i64),
-            Data::Str(s) => Data::Integer(s.parse::<i64>().unwrap()),
+            Data::Int(_) => data,
+            Data::Bool(b) => Data::Int(b as i64),
+            Data::Str(s) => Data::Int(s.parse::<i64>().unwrap()),
         }
     }
 
     pub fn bool(data: Data) -> Data {
         match data {
-            Data::Integer(i) => Data::Bool(i != 0),
+            Data::Int(i) => Data::Bool(i != 0),
             Data::Bool(_) => data,
             Data::Str(s) => Data::Bool(s.parse::<bool>().unwrap()),
         }
@@ -47,7 +47,7 @@ mod types {
 
     pub fn str(data: Data) -> Data {
         match data {
-            Data::Integer(i) => Data::Str(i.to_string()),
+            Data::Int(i) => Data::Str(i.to_string()),
             Data::Bool(b) => Data::Str(b.to_string()),
             Data::Str(_) => data,
         }
@@ -55,7 +55,7 @@ mod types {
 }
 
 mod io {
-    use crate::datatype::Data;
+    use crate::data::Data;
     use std::io::stdin;
 
     pub fn read() -> Data {
@@ -73,7 +73,7 @@ mod io {
     pub fn print(datas: Vec<Data>) {
         for data in datas {
             match data {
-                Data::Integer(i) => print!("{i}"),
+                Data::Int(i) => print!("{i}"),
                 Data::Bool(b) => print!("{b}"),
                 Data::Str(s) => print!("{s}"),
             }
