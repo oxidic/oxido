@@ -157,6 +157,15 @@ impl<'a> Interpreter<'a> {
                             break;
                         }
                     }
+                } else {
+                    error(
+                        self.name,
+                        self.file,
+                        "0004",
+                        "function does not exist",
+                        "tried to call a function which does not exist",
+                        &node.1,
+                    );
                 }
             }
             AstNode::FunctionDeclaration(name, params, statements) => {

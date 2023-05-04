@@ -516,6 +516,7 @@ impl<'a> Parser<'a> {
         mut lexer: Peekable<IntoIter<&'a (Token, usize)>>,
         prec: u16,
     ) -> (Expression, Peekable<IntoIter<&'a (Token, usize)>>) {
+        println!("{lexer:?}");
         let token = &lexer.next().unwrap();
         let mut expr: Option<Expression> = None;
 
@@ -617,6 +618,7 @@ impl<'a> Parser<'a> {
             let op = lex.peek();
 
             if op.is_none() || op.unwrap().0 == Token::RParen {
+                lexer.next();
                 break;
             }
 
@@ -647,6 +649,8 @@ impl<'a> Parser<'a> {
                 &(token.1..token.1),
             );
         }
+
+        println!("{expr:?}");
 
         (expr.unwrap(), lexer)
     }
