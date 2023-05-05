@@ -1,6 +1,6 @@
-let s: str = "10";
+let s = "10";
 
-let n: int = int(s);
+let n = int(s);
 
 fn factorial(n: int) -> int {
     if n == 0 {
@@ -10,6 +10,6 @@ fn factorial(n: int) -> int {
     return n * factorial(n - 1);
 }
 
-let f: int = factorial(n);
+let f = factorial(n);
 
 println(f);

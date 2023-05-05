@@ -2,7 +2,7 @@ use std::{iter::Peekable, ops::Range, vec::IntoIter};
 
 use crate::{
     ast::{Ast, AstNode, Expression},
-    data::Param,
+    data::{DataType, Param},
     error::error,
     token::{Token, Tokens},
 };
@@ -193,18 +193,12 @@ impl<'a> Parser<'a> {
         let node: (AstNode, Range<usize>) = if token.0 == Token::Let {
             let t = &stream.next()?;
             if let Token::Identifier(ident) = &t.0 {
-                let t = stream.next()?;
+                let t = stream.peek()?;
                 let datatype = if let Token::DataType(datatype) = t.0 {
-                    datatype
+                    stream.next()?;
+                    Some(datatype)
                 } else {
-                    error(
-                        self.name,
-                        self.file,
-                        "E0010",
-                        "expected data type",
-                        "expected data type",
-                        &(t.1 - 1..t.1 + t.0.len() - 1),
-                    )
+                    None
                 };
 
                 self.check(stream.next()?, Token::Equal);
@@ -218,6 +212,16 @@ impl<'a> Parser<'a> {
                 let tokens = tokens.iter().map(|f| **f).collect::<Vec<_>>();
 
                 let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
+
+                println!("{datatype:?}");
+
+                let datatype = if datatype.is_none() {
+                    let datatype = self.infer_datatype(&expression);
+
+                    datatype
+                } else {
+                    datatype
+                };
 
                 (
                     AstNode::Assignment(ident.to_string(), datatype, expression),
@@ -476,6 +480,35 @@ impl<'a> Parser<'a> {
         };
 
         true
+    }
+
+    pub fn infer_datatype(&self, expr: &Expression) -> Option<DataType> {
+        match expr {
+            Expression::BinaryOperation(lhs, _, rhs) => {
+                let lhs = self.infer_datatype(lhs);
+                let rhs = self.infer_datatype(rhs);
+
+                if lhs.is_none() || rhs.is_none() {
+                    return None;
+                };
+
+                let lhs = lhs.unwrap();
+                let rhs = rhs.unwrap();
+
+                Some(match (lhs, rhs) {
+                    (DataType::Str, _) => DataType::Str,
+                    (_, DataType::Str) => DataType::Str,
+                    (DataType::Int, _) => DataType::Int,
+                    (_, DataType::Int) => DataType::Int,
+                    (DataType::Bool, _) => DataType::Bool,
+                })
+            }
+            Expression::Str(_) => Some(DataType::Str),
+            Expression::Int(_) => Some(DataType::Int),
+            Expression::Bool(_) => Some(DataType::Bool),
+            Expression::FunctionCall(_, _) => None,
+            Expression::Identifier(_) => None,
+        }
     }
 
     pub fn pratt_parser(

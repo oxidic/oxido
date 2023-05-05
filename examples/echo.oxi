@@ -1,3 +1,3 @@
-let a: str = read();
+let a = read();
 
 println(a);
