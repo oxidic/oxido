@@ -201,9 +201,9 @@ impl<'a> Interpreter<'a> {
                     );
                 }
             }
-            AstNode::FunctionDeclaration(name, params, statements) => {
+            AstNode::FunctionDeclaration(name, params, datatype, statements) => {
                 self.functions
-                    .insert(name.clone(), Function::new(name, params, statements));
+                    .insert(name.clone(), Function::new(name, params, datatype, statements));
             }
             AstNode::Break => {
                 self.stop = true;
@@ -252,6 +252,17 @@ impl<'a> Interpreter<'a> {
             };
         }
         let function = self.functions.get(&*f).unwrap().to_owned();
+
+        if function.datatype.is_none() {
+            error(
+                self.name,
+                self.file,
+                "0004",
+                "function does not return a value",
+                "function does not a return a value",
+                pos,
+            );
+        }
 
         if args.len() != function.params.len() {
             error(
@@ -310,6 +321,21 @@ impl<'a> Interpreter<'a> {
             if self.returned.is_some() {
                 let data = self.returned.clone().unwrap();
                 self.returned = None;
+
+                if data.r#type() != function.datatype.unwrap() {
+                    error(
+                        self.name,
+                        self.file,
+                        "0004",
+                        &format!(
+                            "mismatched data types expected {} found {}",
+                            function.datatype.unwrap(),
+                            data.to_string()
+                        ),
+                        "incorrect data type",
+                        pos,
+                    );
+                }
                 break data;
             }
         }

@@ -76,14 +76,16 @@ impl Param {
 pub struct Function {
     pub name: String,
     pub params: Vec<Param>,
+    pub datatype: Option<DataType>,
     pub statements: Ast,
 }
 
 impl Function {
-    pub fn new(name: String, params: Vec<Param>, statements: Ast) -> Self {
+    pub fn new(name: String, params: Vec<Param>, datatype: Option<DataType>, statements: Ast) -> Self {
         Self {
             name,
             params,
+            datatype,
             statements,
         }
     }

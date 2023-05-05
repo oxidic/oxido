@@ -372,6 +372,20 @@ impl<'a> Parser<'a> {
                     }
                 }
 
+                let t = stream.next()?;
+                let datatype = if let Token::DataType(datatype) = t.0 {
+                    datatype
+                } else {
+                    error(
+                        self.name,
+                        self.file,
+                        "E0010",
+                        "expected data type",
+                        "expected data type",
+                        &(t.1 - 1..t.1 + t.0.len() - 1),
+                    )
+                };
+
                 self.check(stream.next()?, Token::LCurly);
 
                 let mut statements = vec![];
@@ -396,6 +410,7 @@ impl<'a> Parser<'a> {
                     AstNode::FunctionDeclaration(
                         name.to_string(),
                         params,
+                        Some(datatype),
                         self.match_tokens(statements)?,
                     ),
                     token.1..t.1,

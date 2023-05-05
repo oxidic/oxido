@@ -1,4 +1,8 @@
-use crate::{error::error, token::{Token, Tokens}, data::DataType};
+use crate::{
+    data::DataType,
+    error::error,
+    token::{Token, Tokens},
+};
 
 pub struct Lexer<'a> {
     name: &'a str,
@@ -184,7 +188,7 @@ impl<'a> Lexer<'a> {
                         &format!("expected datatype found `{ch}`"),
                         &format!("token `{ch}` was not expected here"),
                         &(self.at..self.at + 1),
-                    )
+                    ),
                 };
 
                 let size = t.len();
@@ -195,7 +199,77 @@ impl<'a> Lexer<'a> {
             } else if ['+', '-', '*', '/', '^', '!', '=', '>', '<'].contains(&ch) {
                 let t = match ch {
                     '+' => Token::Addition,
-                    '-' => Token::Subtraction,
+                    '-' => {
+                        let ch = stream.peek();
+                        self.at += 1;
+
+                        if ch.is_none() {
+                            if self.at > size {
+                                break;
+                            }
+                            stream.next();
+                            continue;
+                        }
+
+                        let ch = if ch?.is_empty() {
+                            stream.next();
+                            continue;
+                        } else {
+                            stream.peek()?.chars().next()?
+                        };
+
+                        if ch == '>' {
+                            stream.next();
+                            loop {
+                                let ch = stream.peek();
+                                self.at += 1;
+
+                                if ch.is_none() {
+                                    if self.at > size {
+                                        break;
+                                    }
+                                    stream.next();
+                                    continue;
+                                }
+
+                                if ch?.chars().next()?.is_whitespace() {
+                                    stream.next();
+                                    continue;
+                                }
+
+                                if !ch?.chars().next()?.is_alphabetic() {
+                                    self.at -= 1;
+                                    break;
+                                }
+
+                                let ch = if ch?.is_empty() {
+                                    stream.next();
+                                    continue;
+                                } else {
+                                    stream.next()?.chars().next()?
+                                };
+
+                                token.push(ch);
+                            }
+
+                            match token.as_str() {
+                                "str" => Token::DataType(DataType::Str),
+                                "int" => Token::DataType(DataType::Int),
+                                "bool" => Token::DataType(DataType::Bool),
+                                _ => error(
+                                    self.name,
+                                    self.file,
+                                    "0001",
+                                    &format!("expected datatype found `{ch}`"),
+                                    &format!("token `{ch}` was not expected here"),
+                                    &(self.at..self.at + 1),
+                                ),
+                            }
+                        } else {
+                            self.at -= 1;
+                            Token::Subtraction
+                        }
+                    }
                     '*' => Token::Multiplication,
                     '/' => Token::Division,
                     '^' => Token::Power,
@@ -310,7 +384,8 @@ impl<'a> Lexer<'a> {
                     _ => unimplemented!(),
                 };
                 let size = t.len();
-                self.tokens.push((t, self.at - size))
+                self.tokens.push((t, self.at - size));
+                continue;
             } else {
                 let t = match ch {
                     ';' => Token::Semicolon,
