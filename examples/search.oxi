@@ -1,0 +1,41 @@
+let a = [0];
+
+print("Enter number of values to be read: ");
+
+let n = int(read());
+let i = 0;
+
+loop {
+    if i == n {
+        break;
+    }
+    print("Enter value: ");
+    a[i] = int(read());
+    i = i + 1;
+}
+
+print("Enter value to be searched: ");
+
+let x = int(read());
+
+let found = false;
+
+i = 0;
+
+loop {
+    if i == n {
+        break;
+    }
+    if a[i] == x {
+        found = true;
+        break;
+    }
+    i = i + 1;
+}
+
+if found == true {
+    print("Value found at index: ");
+    print(i);
+} else {
+    print("Value not found");
+}

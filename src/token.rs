@@ -8,6 +8,7 @@ pub type Tokens = Vec<(Token, usize)>;
 pub enum Token {
     Let,
     If,
+    Else,
     Loop,
     Fn,
 
@@ -39,6 +40,8 @@ pub enum Token {
     RParen,
     LCurly,
     RCurly,
+    LSquare,
+    RSquare,
 
     Exit,
     Break,
@@ -50,6 +53,7 @@ impl Token {
         match &self {
             Token::Let => String::from("let"),
             Token::If => String::from("if"),
+            Token::Else => String::from("else"),
             Token::Loop => String::from("loop"),
             Token::Fn => String::from("fn"),
 
@@ -74,6 +78,7 @@ impl Token {
                     DataType::Str => String::from("Str"),
                     DataType::Int => String::from("Int"),
                     DataType::Bool => String::from("Bool"),
+                    DataType::Vector => String::from("Vector"),
                 }
             },
 
@@ -87,6 +92,8 @@ impl Token {
             Token::RParen => String::from(")"),
             Token::LCurly => String::from("{"),
             Token::RCurly => String::from("}"),
+            Token::LSquare => String::from("["),
+            Token::RSquare => String::from("]"),
 
             Token::Exit => String::from("exit"),
             Token::Break => String::from("break"),

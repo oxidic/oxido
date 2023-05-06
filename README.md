@@ -1,9 +1,7 @@
 # Oxido
 
-**Table of Contents**:
-
 - [Oxido](#oxido)
-  - [Files](#Files)
+  - [Files:](#files)
   - [Installation](#installation)
   - [Uninstallation](#uninstallation)
   - [Usage](#usage)
@@ -15,6 +13,15 @@
     - [Loop statements](#loop-statements)
     - [Functions](#functions)
     - [Exiting](#exiting)
+  - [Standard Library](#standard-library)
+    - [IO](#io)
+      - [print()](#print)
+      - [println()](#println)
+    - [Types](#types)
+      - [str()](#str)
+      - [int()](#int)
+      - [bool()](#bool)
+
 
 Oxido is a dynamic interpreted programming language basing most of its syntax on Rust.
 
@@ -65,17 +72,19 @@ Conventionally, Oxido files are named `main.oxi`.
 * Int: Integers (no fractions), passing the regex `[0-9]+`.
 
 * Bool: `true` or `false`
+  
+* Vec: A uniform collection of the other data types, denoted by `[T]`.
 
 ### Variables
 
-Variables are declared by the `let` keyword, followed by the identifier, which must pass the regex `[A-Za-z]+`, followed by the data type and an equal sign and the expression.
+Variables are declared by the `let` keyword, followed by the identifier, which must pass the regex `[A-Za-z]+`, followed by the data type (optional) and an equal sign and the expression.
 
 For example:
 
 ```rs
 let a: str = "Hi mom!";
-let a: int = 5;
-let a: int = 5 * 5;
+let n = 5;
+let z = 5 * 5;
 let f: int = factorial(5);
 ```
 
@@ -127,8 +136,9 @@ Funcitons store the given conditions until they are called. They are declared wi
 ```rs
 let text = "Hi mom!";
 
-fn message(x: str) {
+fn message(x: str) -> int {
     print(x);
+    return 0;
 }
 
 message(text);

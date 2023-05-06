@@ -49,7 +49,6 @@ impl<'a> Parser<'a> {
 
                     if token.0 == Token::Semicolon {
                         statements.push(token);
-                        nodes.push(self.parse(statements)?);
                         break;
                     }
 
@@ -57,6 +56,8 @@ impl<'a> Parser<'a> {
 
                     pos += 1;
                 }
+
+                nodes.push(self.parse(statements)?);
             } else if let Token::Identifier(_) = token.0 {
                 loop {
                     let token = tokens.get(pos);
@@ -69,7 +70,6 @@ impl<'a> Parser<'a> {
 
                     if token.0 == Token::Semicolon {
                         statements.push(token);
-                        nodes.push(self.parse(statements)?);
                         break;
                     }
 
@@ -77,6 +77,8 @@ impl<'a> Parser<'a> {
 
                     pos += 1;
                 }
+
+                nodes.push(self.parse(statements)?);
             } else if let Token::FunctionName(_) = token.0 {
                 loop {
                     let token = tokens.get(pos);
@@ -89,7 +91,6 @@ impl<'a> Parser<'a> {
 
                     if token.0 == Token::Semicolon {
                         statements.push(token);
-                        nodes.push(self.parse(statements)?);
                         break;
                     }
 
@@ -97,7 +98,49 @@ impl<'a> Parser<'a> {
 
                     pos += 1;
                 }
-            } else if token.0 == Token::If || token.0 == Token::Loop || token.0 == Token::Fn {
+
+                nodes.push(self.parse(statements)?);
+            } else if token.0 == Token::If {
+                let mut depth = 0;
+                loop {
+                    let token = tokens.get(pos);
+
+                    if token.is_none() {
+                        break;
+                    }
+
+                    let token = token?;
+
+                    if token.0 == Token::LCurly {
+                        depth += 1;
+                    }
+
+                    if token.0 == Token::RCurly {
+                        depth -= 1;
+                        if depth == 0 {
+                            statements.push(token);
+                            if tokens.get(pos + 1).is_some()
+                                && tokens.get(pos + 1)?.0 == Token::Else
+                            {
+                                pos += 1;
+                                statements.push(tokens.get(pos + 1)?);
+                                continue;
+                            }
+                            break;
+                        }
+                    }
+
+                    statements.push(token);
+
+                    pos += 1;
+                }
+
+                println!("{:?}", statements);
+
+                nodes.push(self.parse(statements)?);
+
+                println!("{:?}", nodes);
+            } else if token.0 == Token::Loop || token.0 == Token::Fn {
                 let mut depth = 0;
                 loop {
                     let token = tokens.get(pos);
@@ -112,7 +155,6 @@ impl<'a> Parser<'a> {
                         depth -= 1;
                         if depth == 0 {
                             statements.push(token);
-                            nodes.push(self.parse(statements)?);
                             break;
                         }
                     }
@@ -124,6 +166,8 @@ impl<'a> Parser<'a> {
 
                     pos += 1;
                 }
+
+                nodes.push(self.parse(statements)?);
             } else {
                 match &token.0 {
                     Token::Break => nodes.push((AstNode::Break, token.1..token.0.len())),
@@ -213,8 +257,6 @@ impl<'a> Parser<'a> {
 
                 let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
 
-                println!("{datatype:?}");
-
                 let datatype = if datatype.is_none() {
                     let datatype = self.infer_datatype(&expression);
 
@@ -238,40 +280,84 @@ impl<'a> Parser<'a> {
                 );
             }
         } else if let Token::Identifier(ident) = &token.0 {
-            self.check(stream.next()?, Token::Equal);
+            if stream.peek()?.0 == Token::LSquare {
+                stream.next()?;
+                let mut tokens = stream.collect::<Vec<_>>();
 
-            let mut tokens = stream.collect::<Vec<_>>();
+                let t = tokens.pop()?;
 
-            let t = tokens.pop()?;
+                self.check(t, Token::Semicolon);
 
-            self.check(t, Token::Semicolon);
+                let mut index_tokens = vec![];
+                let mut expr_tokens = vec![];
 
-            let tokens = tokens.iter().map(|f| **f).collect::<Vec<_>>();
+                let mut flag = false;
+                for token in tokens {
+                    if token.0 == Token::RSquare {
+                        flag = true;
+                        continue;
+                    }
 
-            let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
+                    if !flag {
+                        index_tokens.push(*token);
+                    } else {
+                        expr_tokens.push(*token);
+                    }
+                }
 
-            (
-                AstNode::ReAssignment(ident.to_string(), expression),
-                token.1..t.1,
-            )
+                let (index, _) = self.pratt_parser(index_tokens.into_iter().peekable(), 0);
+
+                self.check(expr_tokens.remove(0), Token::Equal);
+
+                let (expression, _) = self.pratt_parser(expr_tokens.into_iter().peekable(), 0);
+
+                (
+                    AstNode::VecReAssignment(ident.to_string(), index, expression),
+                    token.1..t.1,
+                )
+            } else {
+                self.check(stream.next()?, Token::Equal);
+
+                let mut tokens = stream.collect::<Vec<_>>();
+
+                let t = tokens.pop()?;
+
+                self.check(t, Token::Semicolon);
+
+                let tokens = tokens.iter().map(|f| **f).collect::<Vec<_>>();
+
+                let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
+
+                (
+                    AstNode::ReAssignment(ident.to_string(), expression),
+                    token.1..t.1,
+                )
+            }
         } else if token.0 == Token::If {
             let mut tokens = vec![];
-            let mut statements = vec![];
+            let mut then = vec![];
+            let mut otherwise = None;
             let mut flag = false;
 
             for token in stream {
                 if token.0 == Token::LCurly {
                     flag = true;
                     continue;
+                } else if token.0 == Token::Else {
+                    otherwise = Some(vec![]);
                 }
                 if flag {
-                    statements.push((*token).to_owned());
+                    if otherwise.is_some() {
+                        otherwise.as_mut()?.push((*token).to_owned());
+                    } else {
+                        then.push((*token).to_owned());
+                    }
                 } else {
                     tokens.push(token);
                 }
             }
 
-            let t = statements.pop()?;
+            let mut t = then.pop()?;
 
             self.check(&t, Token::RCurly);
 
@@ -279,10 +365,24 @@ impl<'a> Parser<'a> {
 
             let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
 
-            (
-                AstNode::If(expression, self.match_tokens(statements)?),
-                token.1..t.1,
-            )
+            if otherwise.is_some() {
+                t = otherwise.as_mut()?.pop()?;
+                self.check(&otherwise.as_mut()?.remove(0), Token::Else);
+                self.check(&t, Token::RCurly);
+                (
+                    AstNode::IfElse(
+                        expression,
+                        self.match_tokens(then)?,
+                        self.match_tokens(otherwise?)?,
+                    ),
+                    token.1..t.1,
+                )
+            } else {
+                (
+                    AstNode::If(expression, self.match_tokens(then)?),
+                    token.1..t.1,
+                )
+            }
         } else if token.0 == Token::Loop {
             let mut statements = vec![];
 
@@ -496,6 +596,8 @@ impl<'a> Parser<'a> {
                 let rhs = rhs.unwrap();
 
                 Some(match (lhs, rhs) {
+                    (DataType::Vector, _) => DataType::Vector,
+                    (_, DataType::Vector) => DataType::Vector,
                     (DataType::Str, _) => DataType::Str,
                     (_, DataType::Str) => DataType::Str,
                     (DataType::Int, _) => DataType::Int,
@@ -508,6 +610,8 @@ impl<'a> Parser<'a> {
             Expression::Bool(_) => Some(DataType::Bool),
             Expression::FunctionCall(_, _) => None,
             Expression::Identifier(_) => None,
+            Expression::Vector(_) => None,
+            Expression::VecIndex(_, _) => None,
         }
     }
 
@@ -521,7 +625,46 @@ impl<'a> Parser<'a> {
 
         match &token.0 {
             Token::Identifier(i) => {
-                expr = Some(Expression::Identifier(i.to_string()));
+                let t = lexer.peek();
+
+                if t.is_some() && t.unwrap().0 == Token::LSquare {
+                    lexer.next().unwrap();
+                    let mut tokens = vec![];
+                    let mut depth = 1;
+
+                    loop {
+                        let t = lexer.next();
+
+                        if t.is_none() {
+                            break;
+                        }
+                        let t = t.unwrap();
+
+                        if t.0 == Token::LSquare {
+                            depth += 1;
+                        } else if t.0 == Token::RSquare {
+                            depth -= 1;
+                        }
+
+                        tokens.push(t);
+
+                        if depth == 0 {
+                            break;
+                        }
+                    }
+
+                    let t = tokens.pop().unwrap();
+
+                    self.check(&t, Token::RSquare);
+
+                    let tokens = tokens.iter().map(|f| *f).collect::<Vec<_>>();
+
+                    let (index, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
+
+                    expr = Some(Expression::VecIndex(i.to_string(), Box::new(index)));
+                } else {
+                    expr = Some(Expression::Identifier(i.to_string()));
+                }
             }
             Token::Bool(bool) => {
                 expr = Some(Expression::Bool(*bool));
@@ -533,6 +676,59 @@ impl<'a> Parser<'a> {
                 let exp;
                 (exp, lexer) = self.pratt_parser(lexer, 0);
                 expr = Some(exp);
+            }
+            Token::LSquare => {
+                let mut tokens = vec![];
+                let mut depth = 1;
+
+                loop {
+                    let t = lexer.next();
+
+                    if t.is_none() {
+                        break;
+                    }
+                    let t = t.unwrap();
+
+                    if t.0 == Token::LSquare {
+                        depth += 1;
+                    } else if t.0 == Token::RSquare {
+                        depth -= 1;
+                    }
+
+                    tokens.push(t);
+
+                    if depth == 0 {
+                        break;
+                    }
+                }
+
+                let mut params = vec![];
+                let mut expression: Tokens = vec![];
+
+                for token in tokens {
+                    if token.0 == Token::RSquare {
+                        if !expression.is_empty() {
+                            let lex = expression.iter().collect::<Vec<_>>().into_iter().peekable();
+                            let (data, _) = self.pratt_parser(lex, 0);
+
+                            params.push(data);
+                        }
+                        break;
+                    }
+
+                    if token.0 == Token::Comma {
+                        let lex = expression.iter().collect::<Vec<_>>().into_iter().peekable();
+                        let (data, _) = self.pratt_parser(lex, 0);
+
+                        params.push(data);
+
+                        expression.clear();
+                        continue;
+                    }
+
+                    expression.push(token.to_owned());
+                }
+                expr = Some(Expression::Vector(params))
             }
             Token::Subtraction => {
                 if let Token::Int(i) = token.0 {
@@ -613,8 +809,7 @@ impl<'a> Parser<'a> {
         };
 
         loop {
-            let mut lex = lexer.clone();
-            let op = lex.peek();
+            let op = lexer.peek();
 
             if op.is_none() || op.unwrap().0 == Token::RParen {
                 lexer.next();
@@ -628,12 +823,12 @@ impl<'a> Parser<'a> {
             if op.unwrap().0 != Token::Power && self.infix_binding_power(op.unwrap()) <= prec {
                 break;
             }
-            lexer.next();
+            let op = lexer.next().unwrap();
             let rhs;
-            (rhs, lexer) = self.pratt_parser(lexer, self.infix_binding_power(op.unwrap()));
+            (rhs, lexer) = self.pratt_parser(lexer, self.infix_binding_power(op));
             expr = Some(Expression::BinaryOperation(
                 Box::new(expr.unwrap()),
-                op.unwrap().0.clone(),
+                op.0.clone(),
                 Box::new(rhs),
             ))
         }

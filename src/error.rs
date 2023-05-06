@@ -8,7 +8,7 @@ use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 
 pub fn error(
     name: &str,
-    source: &str,
+    file: &str,
     code: &str,
     message: &str,
     note: &str,
@@ -16,7 +16,7 @@ pub fn error(
 ) -> ! {
     let mut files = SimpleFiles::new();
 
-    let file_id = files.add(name, source);
+    let file_id = files.add(name, file);
 
     let diagnostic = Diagnostic::error()
         .with_message(message)

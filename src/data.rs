@@ -7,6 +7,7 @@ pub enum Data {
     Str(String),
     Int(i64),
     Bool(bool),
+    Vector(Vec<Data>, DataType),
 }
 
 impl Data {
@@ -15,6 +16,7 @@ impl Data {
             Data::Str(_) => "str",
             Data::Int(_) => "int",
             Data::Bool(_) => "bool",
+            Data::Vector(_, _) => "vector",
         }
     }
 
@@ -23,12 +25,14 @@ impl Data {
             Data::Str(_) => DataType::Str,
             Data::Int(_) => DataType::Int,
             Data::Bool(_) => DataType::Bool,
+            Data::Vector(_, _) => DataType::Vector,
         }
     }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum DataType {
+    Vector,
     Str,
     Int,
     Bool,
@@ -43,6 +47,7 @@ impl Display for DataType {
                 DataType::Str => "str",
                 DataType::Int => "int",
                 DataType::Bool => "bool",
+                DataType::Vector => "vector",
             })
         )
     }
@@ -81,7 +86,12 @@ pub struct Function {
 }
 
 impl Function {
-    pub fn new(name: String, params: Vec<Param>, datatype: Option<DataType>, statements: Ast) -> Self {
+    pub fn new(
+        name: String,
+        params: Vec<Param>,
+        datatype: Option<DataType>,
+        statements: Ast,
+    ) -> Self {
         Self {
             name,
             params,

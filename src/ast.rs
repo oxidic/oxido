@@ -7,7 +7,9 @@ pub type Ast = Vec<(AstNode, Range<usize>)>;
 pub enum AstNode {
     Assignment(String, Option<DataType>, Expression),
     ReAssignment(String, Expression),
+    VecReAssignment(String, Expression, Expression),
     If(Expression, Ast),
+    IfElse(Expression, Ast, Ast),
     Loop(Ast),
     FunctionCall(String, Vec<Expression>),
     FunctionDeclaration(String, Vec<Param>, Option<DataType>, Ast),
@@ -23,5 +25,7 @@ pub enum Expression {
     Int(i64),
     Bool(bool),
     FunctionCall(String, Vec<Expression>),
-    Identifier(String)
+    Identifier(String),
+    Vector(Vec<Expression>),
+    VecIndex(String, Box<Expression>),
 }

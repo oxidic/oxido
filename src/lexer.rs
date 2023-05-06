@@ -394,6 +394,8 @@ impl<'a> Lexer<'a> {
                     '(' => Token::LParen,
                     '}' => Token::RCurly,
                     '{' => Token::LCurly,
+                    ']' => Token::RSquare,
+                    '[' => Token::LSquare,
                     _ => {
                         self.at -= 2;
                         error(
@@ -414,6 +416,7 @@ impl<'a> Lexer<'a> {
                 let t = match token.as_str() {
                     "let" => Token::Let,
                     "if" => Token::If,
+                    "else" => Token::Else,
                     "loop" => Token::Loop,
                     "fn" => Token::Fn,
                     "exit" => Token::Exit,

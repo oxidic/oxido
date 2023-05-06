@@ -15,6 +15,7 @@ pub struct Interpreter<'a> {
     returned: Option<Data>,
     variables: HashMap<String, Variable>,
     functions: HashMap<String, Function>,
+    std: StandardLibrary<'a>,
 }
 
 impl<'a> Interpreter<'a> {
@@ -26,6 +27,7 @@ impl<'a> Interpreter<'a> {
             returned: None,
             variables: HashMap::new(),
             functions: HashMap::new(),
+            std: StandardLibrary::new(name, file),
         }
     }
 
@@ -74,8 +76,8 @@ impl<'a> Interpreter<'a> {
                         self.name,
                         self.file,
                         "0005",
-                        "token was not expected here",
-                        "unexpected token",
+                        "undeclared variable",
+                        "attempted to access value of undeclared variable",
                         &node.1,
                     );
                 }
@@ -97,6 +99,75 @@ impl<'a> Interpreter<'a> {
                 }
                 self.variables.insert(ident, Variable::new(datatype, data));
             }
+            AstNode::VecReAssignment(ident, index, expression) => {
+                let data = self.parse_expression(expression, &node.1);
+                let index = self.parse_expression(index, &node.1);
+                let mut variable = self.variables.get(&ident).unwrap().clone();
+
+                if let Data::Vector(mut vec, datatype) = variable.data {
+                    if let Data::Int(index) = index {
+                        if index as usize > vec.len() {
+                            error(
+                                self.name,
+                                self.file,
+                                "E0006",
+                                "index out of bounds",
+                                "index out of bounds",
+                                &node.1,
+                            );
+                        }
+
+                        if datatype != data.r#type() {
+                            error(
+                                self.name,
+                                self.file,
+                                "E00011",
+                                "incorrect data type",
+                                &format!(
+                                    "mismatched data types expected {} found {}",
+                                    datatype,
+                                    data.to_string()
+                                ),
+                                &node.1,
+                            )
+                        }
+
+                        if vec.len() == index.try_into().unwrap() {
+                            vec.push(data);
+                        } else {
+                            vec[index as usize] = data;
+                        }
+
+                        variable.data = Data::Vector(vec, datatype);
+
+                        self.variables.insert(ident, variable.clone());
+                    } else {
+                        error(
+                            self.name,
+                            self.file,
+                            "0002",
+                            &format!(
+                                "mismatched data types, expected `int` found {}",
+                                index.to_string()
+                            ),
+                            "a value of type `int` was expected",
+                            &node.1,
+                        );
+                    }
+                } else {
+                    error(
+                        self.name,
+                        self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `vector` found {}",
+                            variable.data.to_string()
+                        ),
+                        "a value of type `vector` was expected",
+                        &node.1,
+                    );
+                }
+            }
             AstNode::If(condition, statements) => {
                 let data = self.parse_expression(condition, &node.1);
 
@@ -110,6 +181,37 @@ impl<'a> Interpreter<'a> {
 
                             self.match_node(stream.next().unwrap());
                         }
+                    }
+                } else {
+                    error(
+                        self.name,
+                        self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `bool` found {}",
+                            data.to_string()
+                        ),
+                        "a value of type `bool` was expected",
+                        &node.1,
+                    );
+                }
+            }
+            AstNode::IfElse(condition, then, otherwise) => {
+                let data = self.parse_expression(condition, &node.1);
+
+                if let Data::Bool(bool) = data {
+                    let mut stream = if bool {
+                        then.into_iter().peekable()
+                    } else {
+                        otherwise.into_iter().peekable()
+                    };
+
+                    loop {
+                        if stream.peek().is_none() {
+                            break;
+                        }
+
+                        self.match_node(stream.next().unwrap());
                     }
                 } else {
                     error(
@@ -151,8 +253,8 @@ impl<'a> Interpreter<'a> {
                     args.push(self.parse_expression(param, &node.1))
                 }
 
-                if StandardLibrary::contains(&name) {
-                    StandardLibrary::call(&name, args);
+                if self.std.contains(&name) {
+                    self.std.call(&name, &node.1, args);
                 } else if self.functions.contains_key(&*name) {
                     let function = self.functions.get(&*name).unwrap().to_owned();
 
@@ -221,8 +323,10 @@ impl<'a> Interpreter<'a> {
                 }
             }
             AstNode::FunctionDeclaration(name, params, datatype, statements) => {
-                self.functions
-                    .insert(name.clone(), Function::new(name, params, datatype, statements));
+                self.functions.insert(
+                    name.clone(),
+                    Function::new(name, params, datatype, statements),
+                );
             }
             AstNode::Break => {
                 self.stop = true;
@@ -252,13 +356,12 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn parse_function(&mut self, f: String, args: Vec<Expression>, pos: &Range<usize>) -> Data {
-        if StandardLibrary::contains(&f) {
-            return match StandardLibrary::call(
-                &f,
-                args.iter()
-                    .map(|f| self.parse_expression(f.clone(), pos))
-                    .collect::<Vec<_>>(),
-            ) {
+        if self.std.contains(&f) {
+            let args = args
+                .iter()
+                .map(|f| self.parse_expression(f.clone(), pos))
+                .collect::<Vec<_>>();
+            return match self.std.call(&f, pos, args) {
                 Some(data) => data,
                 None => error(
                     self.name,
@@ -370,6 +473,87 @@ impl<'a> Interpreter<'a> {
             Expression::Bool(b) => Data::Bool(b),
             Expression::Str(s) => Data::Str(s),
             Expression::FunctionCall(f, args) => self.parse_function(f, args, pos),
+            Expression::Vector(vector) => {
+                let mut data = Vec::new();
+                let mut datatype = None;
+                for expr in vector {
+                    let d = self.parse_expression(expr, pos);
+
+                    if datatype.is_none() {
+                        datatype = Some(d.r#type());
+                    } else if datatype.unwrap() != d.r#type() {
+                        error(
+                            self.name,
+                            self.file,
+                            "0004",
+                            &format!(
+                                "mismatched data types expected {} found {}",
+                                datatype.unwrap(),
+                                d.to_string()
+                            ),
+                            "incorrect data type",
+                            pos,
+                        );
+                    }
+
+                    data.push(d);
+                }
+                Data::Vector(data, datatype.unwrap())
+            }
+            Expression::VecIndex(ident, index) => {
+                let index = self.parse_expression(*index, pos);
+                let data = self.variables.get(&ident).unwrap().to_owned().data;
+
+                match data {
+                    Data::Vector(vec, _) => match index {
+                        Data::Int(i) => {
+                            if i < 0 {
+                                error(
+                                    self.name,
+                                    self.file,
+                                    "E0004",
+                                    "index cannot be negative",
+                                    "index cannot be negative",
+                                    pos,
+                                );
+                            }
+                            match vec.get(i as usize) {
+                                Some(data) => data.to_owned(),
+                                None => error(
+                                    self.name,
+                                    self.file,
+                                    "E0004",
+                                    &format!("index out of bounds, index {} is out of bounds for vector of length {}", i, vec.len()),
+                                    "index out of bounds",
+                                    pos,
+                                )
+                            }
+                        }
+                        data => error(
+                            self.name,
+                            self.file,
+                            "E0004",
+                            &format!(
+                                "mismatched data types, expected `int` found {}",
+                                data.to_string()
+                            ),
+                            "a value of type `int` was expected",
+                            pos,
+                        ),
+                    },
+                    data => error(
+                        self.name,
+                        self.file,
+                        "0004",
+                        &format!(
+                            "mismatched data types, expected `vector` found {}",
+                            data.to_string()
+                        ),
+                        "a value of type `vector` was expected",
+                        pos,
+                    ),
+                }
+            }
         }
     }
 
@@ -576,6 +760,20 @@ impl<'a> Interpreter<'a> {
                         pos,
                     ),
                 },
+                Data::Vector(v1, _) => match rhs {
+                    Data::Vector(v2, _) => Data::Bool(v1 == v2),
+                    data => error(
+                        self.name,
+                        self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `vector` found {}",
+                            data.to_string()
+                        ),
+                        "a value of type `vector` was expected",
+                        pos,
+                    ),
+                },
             },
             Token::IsNotEqual => match lhs {
                 Data::Str(str) => match rhs {
@@ -617,6 +815,20 @@ impl<'a> Interpreter<'a> {
                             data.to_string()
                         ),
                         "a value of type `bool` was expected",
+                        pos,
+                    ),
+                },
+                Data::Vector(v1, _) => match rhs {
+                    Data::Vector(v2, _) => Data::Bool(v1 != v2),
+                    data => error(
+                        self.name,
+                        self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `vector` found {}",
+                            data.to_string()
+                        ),
+                        "a value of type `vector` was expected",
                         pos,
                     ),
                 },
@@ -664,6 +876,20 @@ impl<'a> Interpreter<'a> {
                         pos,
                     ),
                 },
+                Data::Vector(v1, _) => match rhs {
+                    Data::Vector(v2, _) => Data::Bool(v1 > v2),
+                    data => error(
+                        self.name,
+                        self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `vector` found {}",
+                            data.to_string()
+                        ),
+                        "a value of type `vector` was expected",
+                        pos,
+                    ),
+                },
             },
             Token::IsLesser => match lhs {
                 Data::Str(str) => match rhs {
@@ -705,6 +931,20 @@ impl<'a> Interpreter<'a> {
                             data.to_string()
                         ),
                         "a value of type `bool` was expected",
+                        pos,
+                    ),
+                },
+                Data::Vector(v1, _) => match rhs {
+                    Data::Vector(v2, _) => Data::Bool(v1 < v2),
+                    data => error(
+                        self.name,
+                        self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `vector` found {}",
+                            data.to_string()
+                        ),
+                        "a value of type `vector` was expected",
                         pos,
                     ),
                 },
@@ -752,6 +992,20 @@ impl<'a> Interpreter<'a> {
                         pos,
                     ),
                 },
+                Data::Vector(v1, _) => match rhs {
+                    Data::Vector(v2, _) => Data::Bool(v1 >= v2),
+                    data => error(
+                        self.name,
+                        self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `vector` found {}",
+                            data.to_string()
+                        ),
+                        "a value of type `vector` was expected",
+                        pos,
+                    ),
+                },
             },
             Token::IsLesserEqual => match lhs {
                 Data::Str(str) => match rhs {
@@ -793,6 +1047,20 @@ impl<'a> Interpreter<'a> {
                             data.to_string()
                         ),
                         "a value of type `bool` was expected",
+                        pos,
+                    ),
+                },
+                Data::Vector(v1, _) => match rhs {
+                    Data::Vector(v2, _) => Data::Bool(v1 <= v2),
+                    data => error(
+                        self.name,
+                        self.file,
+                        "0002",
+                        &format!(
+                            "mismatched data types, expected `vector` found {}",
+                            data.to_string()
+                        ),
+                        "a value of type `vector` was expected",
                         pos,
                     ),
                 },
