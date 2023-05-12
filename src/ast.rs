@@ -26,6 +26,6 @@ pub enum Expression {
     Bool(bool),
     FunctionCall(String, Vec<Expression>),
     Identifier(String),
-    Vector(Vec<Expression>),
+    Vector(Vec<Expression>, Option<DataType>),
     VecIndex(String, Box<Expression>),
 }

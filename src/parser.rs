@@ -134,12 +134,7 @@ impl<'a> Parser<'a> {
 
                     pos += 1;
                 }
-
-                println!("{:?}", statements);
-
                 nodes.push(self.parse(statements)?);
-
-                println!("{:?}", nodes);
             } else if token.0 == Token::Loop || token.0 == Token::Fn {
                 let mut depth = 0;
                 loop {
@@ -238,9 +233,9 @@ impl<'a> Parser<'a> {
             let t = &stream.next()?;
             if let Token::Identifier(ident) = &t.0 {
                 let t = stream.peek()?;
-                let datatype = if let Token::DataType(datatype) = t.0 {
+                let datatype = if let Token::DataType(datatype) = &t.0 {
                     stream.next()?;
-                    Some(datatype)
+                    Some(datatype.clone())
                 } else {
                     None
                 };
@@ -470,14 +465,14 @@ impl<'a> Parser<'a> {
                     }
 
                     if let Token::Identifier(name) = token {
-                        if let Token::DataType(datatype) = stream.next()?.0 {
-                            params.push(Param::new(name.to_string(), datatype));
+                        if let Token::DataType(datatype) = &stream.next()?.0 {
+                            params.push(Param::new(name.to_string(), datatype.clone()));
                         }
                     }
                 }
 
                 let t = stream.next()?;
-                let datatype = if let Token::DataType(datatype) = t.0 {
+                let datatype = if let Token::DataType(datatype) = &t.0 {
                     datatype
                 } else {
                     error(
@@ -514,7 +509,7 @@ impl<'a> Parser<'a> {
                     AstNode::FunctionDeclaration(
                         name.to_string(),
                         params,
-                        Some(datatype),
+                        Some(datatype.clone()),
                         self.match_tokens(statements)?,
                     ),
                     token.1..t.1,
@@ -596,8 +591,8 @@ impl<'a> Parser<'a> {
                 let rhs = rhs.unwrap();
 
                 Some(match (lhs, rhs) {
-                    (DataType::Vector, _) => DataType::Vector,
-                    (_, DataType::Vector) => DataType::Vector,
+                    (DataType::Vector(t), _) => DataType::Vector(t),
+                    (_, DataType::Vector(t)) => DataType::Vector(t),
                     (DataType::Str, _) => DataType::Str,
                     (_, DataType::Str) => DataType::Str,
                     (DataType::Int, _) => DataType::Int,
@@ -610,7 +605,7 @@ impl<'a> Parser<'a> {
             Expression::Bool(_) => Some(DataType::Bool),
             Expression::FunctionCall(_, _) => None,
             Expression::Identifier(_) => None,
-            Expression::Vector(_) => None,
+            Expression::Vector(_, d) => d.clone(),
             Expression::VecIndex(_, _) => None,
         }
     }
@@ -728,7 +723,12 @@ impl<'a> Parser<'a> {
 
                     expression.push(token.to_owned());
                 }
-                expr = Some(Expression::Vector(params))
+                let datatype = if params.first().is_some() {
+                    self.infer_datatype(params.first().unwrap())
+                } else {
+                    None
+                };
+                expr = Some(Expression::Vector(params, datatype))
             }
             Token::Subtraction => {
                 if let Token::Int(i) = token.0 {

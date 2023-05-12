@@ -180,6 +180,10 @@ mod io {
     }
 
     pub fn println(datas: Vec<Data>) {
+        if datas.len() == 0 {
+            println!();
+            return;
+        }
         for data in datas {
             match data {
                 Data::Int(i) => println!("{i}"),

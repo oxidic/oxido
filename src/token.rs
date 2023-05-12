@@ -73,14 +73,7 @@ impl Token {
 
             Token::Identifier(ident) => ident.to_string(),
             Token::FunctionName(fname) => fname.to_string(),
-            Token::DataType(datatype) => {
-                match datatype {
-                    DataType::Str => String::from("Str"),
-                    DataType::Int => String::from("Int"),
-                    DataType::Bool => String::from("Bool"),
-                    DataType::Vector => String::from("Vector"),
-                }
-            },
+            Token::DataType(datatype) => datatype.to_string(),
 
             Token::Str(string) => string.to_string(),
             Token::Int(i) => format!("{i}"),

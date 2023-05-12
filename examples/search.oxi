@@ -1,4 +1,4 @@
-let a = [0];
+let a: vec<int> = [];
 
 print("Enter number of values to be read: ");
 

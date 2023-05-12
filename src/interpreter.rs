@@ -2,7 +2,7 @@ use std::{collections::HashMap, ops::Range, process};
 
 use crate::{
     ast::{Ast, AstNode, Expression},
-    data::{Data, Function, Variable},
+    data::{Data, DataType, Function, Variable},
     error::error,
     standardlibrary::StandardLibrary,
     token::Token,
@@ -48,7 +48,7 @@ impl<'a> Interpreter<'a> {
         }
         match node.0 {
             AstNode::Assignment(ident, datatype, expression) => {
-                let data = self.parse_expression(expression, &node.1);
+                let data = self.parse_expression(expression, datatype.clone(), &node.1);
                 let datatype = if datatype.is_none() {
                     data.r#type()
                 } else {
@@ -81,8 +81,8 @@ impl<'a> Interpreter<'a> {
                         &node.1,
                     );
                 }
-                let datatype = self.variables.get(&ident).unwrap().datatype;
-                let data = self.parse_expression(expression, &node.1);
+                let datatype = self.variables.get(&ident).unwrap().datatype.clone();
+                let data = self.parse_expression(expression, Some(datatype.clone()), &node.1);
                 if datatype != data.r#type() {
                     error(
                         self.name,
@@ -100,8 +100,8 @@ impl<'a> Interpreter<'a> {
                 self.variables.insert(ident, Variable::new(datatype, data));
             }
             AstNode::VecReAssignment(ident, index, expression) => {
-                let data = self.parse_expression(expression, &node.1);
-                let index = self.parse_expression(index, &node.1);
+                let data = self.parse_expression(expression, None, &node.1);
+                let index = self.parse_expression(index, None, &node.1);
                 let mut variable = self.variables.get(&ident).unwrap().clone();
 
                 if let Data::Vector(mut vec, datatype) = variable.data {
@@ -117,7 +117,7 @@ impl<'a> Interpreter<'a> {
                             );
                         }
 
-                        if datatype != data.r#type() {
+                        if datatype != DataType::Vector(Box::new(data.r#type())) {
                             error(
                                 self.name,
                                 self.file,
@@ -169,7 +169,7 @@ impl<'a> Interpreter<'a> {
                 }
             }
             AstNode::If(condition, statements) => {
-                let data = self.parse_expression(condition, &node.1);
+                let data = self.parse_expression(condition, None, &node.1);
 
                 if let Data::Bool(bool) = data {
                     if bool {
@@ -197,7 +197,7 @@ impl<'a> Interpreter<'a> {
                 }
             }
             AstNode::IfElse(condition, then, otherwise) => {
-                let data = self.parse_expression(condition, &node.1);
+                let data = self.parse_expression(condition, None, &node.1);
 
                 if let Data::Bool(bool) = data {
                     let mut stream = if bool {
@@ -250,7 +250,7 @@ impl<'a> Interpreter<'a> {
                 let mut args = vec![];
 
                 for param in params {
-                    args.push(self.parse_expression(param, &node.1))
+                    args.push(self.parse_expression(param, None, &node.1))
                 }
 
                 if self.std.contains(&name) {
@@ -293,7 +293,7 @@ impl<'a> Interpreter<'a> {
 
                         self.variables.insert(
                             param.name.clone(),
-                            Variable::new(param.datatype, arg.to_owned()),
+                            Variable::new(param.datatype.clone(), arg.to_owned()),
                         );
                     }
 
@@ -331,9 +331,11 @@ impl<'a> Interpreter<'a> {
             AstNode::Break => {
                 self.stop = true;
             }
-            AstNode::Return(expr) => self.returned = Some(self.parse_expression(expr, &node.1)),
+            AstNode::Return(expr) => {
+                self.returned = Some(self.parse_expression(expr, None, &node.1))
+            }
             AstNode::Exit(expr) => {
-                let data = self.parse_expression(expr, &node.1);
+                let data = self.parse_expression(expr, None, &node.1);
 
                 match data {
                     Data::Int(n) => process::exit(n.try_into().unwrap()),
@@ -359,7 +361,7 @@ impl<'a> Interpreter<'a> {
         if self.std.contains(&f) {
             let args = args
                 .iter()
-                .map(|f| self.parse_expression(f.clone(), pos))
+                .map(|f| self.parse_expression(f.clone(), None, pos))
                 .collect::<Vec<_>>();
             return match self.std.call(&f, pos, args) {
                 Some(data) => data,
@@ -373,9 +375,10 @@ impl<'a> Interpreter<'a> {
                 ),
             };
         }
-        let function = self.functions.get(&*f).unwrap().to_owned();
+        let function = self.functions.get(&*f).unwrap().clone();
+        let datatype = &function.datatype;
 
-        if function.datatype.is_none() {
+        if datatype.is_none() {
             error(
                 self.name,
                 self.file,
@@ -404,7 +407,7 @@ impl<'a> Interpreter<'a> {
         for (i, arg) in args.iter().enumerate() {
             let param = function.params.get(i).unwrap();
 
-            let data = self.parse_expression(arg.to_owned(), pos);
+            let data = self.parse_expression(arg.to_owned(), None, pos);
 
             if param.datatype != data.r#type() {
                 error(
@@ -421,8 +424,10 @@ impl<'a> Interpreter<'a> {
                 )
             }
 
-            self.variables
-                .insert(param.name.clone(), Variable::new(param.datatype, data));
+            self.variables.insert(
+                param.name.clone(),
+                Variable::new(param.datatype.clone(), data),
+            );
         }
 
         let mut stream = function.statements.into_iter().peekable();
@@ -444,14 +449,14 @@ impl<'a> Interpreter<'a> {
                 let data = self.returned.clone().unwrap();
                 self.returned = None;
 
-                if data.r#type() != function.datatype.unwrap() {
+                if data.r#type() != datatype.clone().unwrap() {
                     error(
                         self.name,
                         self.file,
                         "0004",
                         &format!(
                             "mismatched data types expected {} found {}",
-                            function.datatype.unwrap(),
+                            datatype.clone().unwrap(),
                             data.to_string()
                         ),
                         "incorrect data type",
@@ -463,7 +468,12 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn parse_expression(&mut self, expr: Expression, pos: &Range<usize>) -> Data {
+    pub fn parse_expression(
+        &mut self,
+        expr: Expression,
+        datatype: Option<DataType>,
+        pos: &Range<usize>,
+    ) -> Data {
         match expr {
             Expression::BinaryOperation(lhs, op, rhs) => {
                 self.parse_binary_operation(*lhs, op, *rhs, pos)
@@ -473,15 +483,19 @@ impl<'a> Interpreter<'a> {
             Expression::Bool(b) => Data::Bool(b),
             Expression::Str(s) => Data::Str(s),
             Expression::FunctionCall(f, args) => self.parse_function(f, args, pos),
-            Expression::Vector(vector) => {
+            Expression::Vector(vector, d) => {
                 let mut data = Vec::new();
-                let mut datatype = None;
+                let mut datatype = if d.is_some() {
+                    d
+                } else {
+                    datatype
+                };
                 for expr in vector {
-                    let d = self.parse_expression(expr, pos);
+                    let d = self.parse_expression(expr, None, pos);
 
                     if datatype.is_none() {
                         datatype = Some(d.r#type());
-                    } else if datatype.unwrap() != d.r#type() {
+                    } else if datatype.clone().unwrap() != d.r#type() {
                         error(
                             self.name,
                             self.file,
@@ -501,7 +515,7 @@ impl<'a> Interpreter<'a> {
                 Data::Vector(data, datatype.unwrap())
             }
             Expression::VecIndex(ident, index) => {
-                let index = self.parse_expression(*index, pos);
+                let index = self.parse_expression(*index, None, pos);
                 let data = self.variables.get(&ident).unwrap().to_owned().data;
 
                 match data {
@@ -564,9 +578,9 @@ impl<'a> Interpreter<'a> {
         rhs: Expression,
         pos: &Range<usize>,
     ) -> Data {
-        let lhs = self.parse_expression(lhs, pos);
+        let lhs = self.parse_expression(lhs, None, pos);
         let operator = op;
-        let rhs = self.parse_expression(rhs, pos);
+        let rhs = self.parse_expression(rhs, None, pos);
         match operator {
             Token::Addition => match lhs {
                 Data::Str(str) => match rhs {

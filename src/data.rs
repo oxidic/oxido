@@ -1,6 +1,5 @@
-use std::fmt::{self, Display};
-
 use crate::ast::Ast;
+use std::fmt::{self, Display};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Data {
@@ -11,28 +10,25 @@ pub enum Data {
 }
 
 impl Data {
-    pub fn to_string(&self) -> &str {
-        match self {
-            Data::Str(_) => "str",
-            Data::Int(_) => "int",
-            Data::Bool(_) => "bool",
-            Data::Vector(_, _) => "vector",
-        }
-    }
-
     pub fn r#type(&self) -> DataType {
         match self {
             Data::Str(_) => DataType::Str,
             Data::Int(_) => DataType::Int,
             Data::Bool(_) => DataType::Bool,
-            Data::Vector(_, _) => DataType::Vector,
+            Data::Vector(_, t) => t.clone(),
         }
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+impl Display for Data {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", String::from(self.r#type().to_string()))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum DataType {
-    Vector,
+    Vector(Box<DataType>),
     Str,
     Int,
     Bool,
@@ -40,15 +36,18 @@ pub enum DataType {
 
 impl Display for DataType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fn match_type(d: &DataType) -> String {
+            match d {
+                DataType::Str => String::from("str"),
+                DataType::Int => String::from("int"),
+                DataType::Bool => String::from("bool"),
+                DataType::Vector(t) => "vec<".to_owned() + &match_type(t) + ">",
+            }
+        }
         write!(
             f,
             "{}",
-            String::from(match self {
-                DataType::Str => "str",
-                DataType::Int => "int",
-                DataType::Bool => "bool",
-                DataType::Vector => "vector",
-            })
+            match_type(self)
         )
     }
 }

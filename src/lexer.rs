@@ -156,15 +156,18 @@ impl<'a> Lexer<'a> {
                         stream.next();
                         continue;
                     }
+                    let char = ch?.chars().next()?;
 
-                    if ch?.chars().next()?.is_whitespace() {
+                    if char.is_whitespace() {
                         stream.next();
                         continue;
                     }
 
-                    if !ch?.chars().next()?.is_alphabetic() {
-                        self.at -= 1;
-                        break;
+                    if !char.is_alphabetic() {
+                        if char != '<' && char != '>' {
+                            self.at -= 1;
+                            break;
+                        }
                     }
 
                     let ch = if ch?.is_empty() {
@@ -177,19 +180,58 @@ impl<'a> Lexer<'a> {
                     token.push(ch);
                 }
 
-                let t = match token.as_str() {
-                    "str" => Token::DataType(DataType::Str),
-                    "int" => Token::DataType(DataType::Int),
-                    "bool" => Token::DataType(DataType::Bool),
-                    _ => error(
-                        self.name,
-                        self.file,
-                        "0001",
-                        &format!("expected datatype found `{ch}`"),
-                        &format!("token `{ch}` was not expected here"),
-                        &(self.at..self.at + 1),
-                    ),
-                };
+                fn match_str(token: &str, name: &str, file: &str, at: usize) -> DataType {
+                    match token {
+                        "str" => DataType::Str,
+                        "int" => DataType::Int,
+                        "bool" => DataType::Bool,
+                        t => {
+                            if t.starts_with("vec") {
+                                let chars = t.chars();
+                                let mut chars = chars.skip(3);
+                                let ch = chars.next();
+
+                                if ch.unwrap() != '<' {
+                                    error(
+                                        name,
+                                        file,
+                                        "0001",
+                                        &format!("expected `<` found `{t}`"),
+                                        &format!("token `{t}` was not expected here"),
+                                        &(at..at + 1),
+                                    )
+                                }
+
+                                let mut chars = chars.collect::<String>();
+
+                                if chars.pop().unwrap() != '>' {
+                                    error(
+                                        name,
+                                        file,
+                                        "0001",
+                                        &format!("expected `<` found `{t}`"),
+                                        &format!("token `{t}` was not expected here"),
+                                        &(at..at + 1),
+                                    )
+                                }
+
+                                return DataType::Vector(Box::new(match_str(
+                                    &chars, name, file, at,
+                                )));
+                            }
+                            error(
+                                name,
+                                file,
+                                "0001",
+                                &format!("expected datatype found `{t}`"),
+                                &format!("token `{t}` was not expected here"),
+                                &(at..at + 1),
+                            )
+                        }
+                    }
+                }
+
+                let t = Token::DataType(match_str(&token, self.name, self.file, self.at));
 
                 let size = t.len();
 
