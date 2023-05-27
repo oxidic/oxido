@@ -22,7 +22,7 @@ impl Data {
 
 impl Display for Data {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", String::from(self.r#type().to_string()))
+        write!(f, "{}", self.r#type())
     }
 }
 

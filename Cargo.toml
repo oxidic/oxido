@@ -3,6 +3,14 @@ name = "oxido"
 version = "2.5.0"
 edition = "2021"
 
+[lib]
+name = "oxidolib"
+path = "src/lib.rs"
+
+[[bin]]
+name = "oxidobin"
+path = "src/bin.rs"
+
 [profile.release]
 strip = true
 opt-level = "z"

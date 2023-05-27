@@ -76,7 +76,7 @@ mod types {
                 "incorrect data type",
                 &format!(
                     "mismatched data types expected `vector` found {}",
-                    data.to_string()
+                    data
                 ),
                 range,
             ),
@@ -95,7 +95,7 @@ mod types {
                 "incorrect data type",
                 &format!(
                     "mismatched data types expected `int | bool | str` found {}",
-                    data.to_string()
+                    data
                 ),
                 range,
             ),
@@ -114,7 +114,7 @@ mod types {
                 "incorrect data type",
                 &format!(
                     "mismatched data types expected `int | bool | str` found {}",
-                    data.to_string()
+                    data
                 ),
                 range,
             ),
@@ -133,7 +133,7 @@ mod types {
                 "incorrect data type",
                 &format!(
                     "mismatched data types expected `int | bool | str` found {}",
-                    data.to_string()
+                    data
                 ),
                 range,
             ),
@@ -180,7 +180,7 @@ mod io {
     }
 
     pub fn println(datas: Vec<Data>) {
-        if datas.len() == 0 {
+        if datas.is_empty() {
             println!();
             return;
         }

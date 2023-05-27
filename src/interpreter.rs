@@ -49,10 +49,10 @@ impl<'a> Interpreter<'a> {
         match node.0 {
             AstNode::Assignment(ident, datatype, expression) => {
                 let data = self.parse_expression(expression, datatype.clone(), &node.1);
-                let datatype = if datatype.is_none() {
-                    data.r#type()
+                let datatype = if let Some(d) = datatype {
+                    d
                 } else {
-                    datatype.unwrap()
+                    data.r#type()
                 };
                 if datatype != data.r#type() {
                     error(
@@ -63,7 +63,7 @@ impl<'a> Interpreter<'a> {
                         &format!(
                             "mismatched data types expected {} found {}",
                             datatype,
-                            data.to_string()
+                            data
                         ),
                         &node.1,
                     )
@@ -92,7 +92,7 @@ impl<'a> Interpreter<'a> {
                         &format!(
                             "mismatched data types expected {} found {}",
                             datatype,
-                            data.to_string()
+                            data
                         ),
                         &node.1,
                     )
@@ -126,7 +126,7 @@ impl<'a> Interpreter<'a> {
                                 &format!(
                                     "mismatched data types expected {} found {}",
                                     datatype,
-                                    data.to_string()
+                                    data
                                 ),
                                 &node.1,
                             )
@@ -148,7 +148,7 @@ impl<'a> Interpreter<'a> {
                             "0002",
                             &format!(
                                 "mismatched data types, expected `int` found {}",
-                                index.to_string()
+                                index
                             ),
                             "a value of type `int` was expected",
                             &node.1,
@@ -161,7 +161,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `vector` found {}",
-                            variable.data.to_string()
+                            variable.data
                         ),
                         "a value of type `vector` was expected",
                         &node.1,
@@ -189,7 +189,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `bool` was expected",
                         &node.1,
@@ -220,7 +220,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `bool` was expected",
                         &node.1,
@@ -285,7 +285,7 @@ impl<'a> Interpreter<'a> {
                                 &format!(
                                     "mismatched data types expected {} found {}",
                                     param.datatype,
-                                    arg.to_string()
+                                    arg
                                 ),
                                 &node.1,
                             )
@@ -346,7 +346,7 @@ impl<'a> Interpreter<'a> {
                             "0002",
                             &format!(
                                 "mismatched data types, expected `int` found {}",
-                                data.to_string()
+                                data
                             ),
                             "a value of type `String` was expected",
                             &node.1,
@@ -417,7 +417,7 @@ impl<'a> Interpreter<'a> {
                     &format!(
                         "mismatched data types expected {} found {}",
                         param.datatype,
-                        data.to_string()
+                        data
                     ),
                     "incorrect data type",
                     pos,
@@ -457,7 +457,7 @@ impl<'a> Interpreter<'a> {
                         &format!(
                             "mismatched data types expected {} found {}",
                             datatype.clone().unwrap(),
-                            data.to_string()
+                            data
                         ),
                         "incorrect data type",
                         pos,
@@ -503,7 +503,7 @@ impl<'a> Interpreter<'a> {
                             &format!(
                                 "mismatched data types expected {} found {}",
                                 datatype.unwrap(),
-                                d.to_string()
+                                d
                             ),
                             "incorrect data type",
                             pos,
@@ -549,7 +549,7 @@ impl<'a> Interpreter<'a> {
                             "E0004",
                             &format!(
                                 "mismatched data types, expected `int` found {}",
-                                data.to_string()
+                                data
                             ),
                             "a value of type `int` was expected",
                             pos,
@@ -561,7 +561,7 @@ impl<'a> Interpreter<'a> {
                         "0004",
                         &format!(
                             "mismatched data types, expected `vector` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `vector` was expected",
                         pos,
@@ -591,7 +591,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `String` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `String` was expected",
                         pos,
@@ -605,7 +605,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `int` was expected",
                         pos,
@@ -617,7 +617,7 @@ impl<'a> Interpreter<'a> {
                     "0002",
                     &format!(
                         "mismatched data types, expected `String` or `int` found {}",
-                        data.to_string()
+                        data
                     ),
                     "a value of type `String` or `int` was expected",
                     pos,
@@ -632,7 +632,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `int` was expected",
                         pos,
@@ -644,7 +644,7 @@ impl<'a> Interpreter<'a> {
                     "0002",
                     &format!(
                         "mismatched data types, expected `int` found {}",
-                        data.to_string()
+                        data
                     ),
                     "a value of type `int` was expected",
                     pos,
@@ -659,7 +659,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `int` was expected",
                         pos,
@@ -671,7 +671,7 @@ impl<'a> Interpreter<'a> {
                     "0002",
                     &format!(
                         "mismatched data types, expected `int` found {}",
-                        data.to_string()
+                        data
                     ),
                     "a value of type `int` was expected",
                     pos,
@@ -686,7 +686,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `int` was expected",
                         pos,
@@ -698,7 +698,7 @@ impl<'a> Interpreter<'a> {
                     "0002",
                     &format!(
                         "mismatched data types, expected `int` found {}",
-                        data.to_string()
+                        data
                     ),
                     "a value of type `int` was expected",
                     pos,
@@ -713,7 +713,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `int` was expected",
                         pos,
@@ -725,7 +725,7 @@ impl<'a> Interpreter<'a> {
                     "0002",
                     &format!(
                         "mismatched data types, expected `int` found {}",
-                        data.to_string()
+                        data
                     ),
                     "a value of type `int` was expected",
                     pos,
@@ -740,7 +740,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `String` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `String` was expected",
                         pos,
@@ -754,7 +754,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `int` was expected",
                         pos,
@@ -768,7 +768,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `bool` was expected",
                         pos,
@@ -782,7 +782,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `vector` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `vector` was expected",
                         pos,
@@ -798,7 +798,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `String` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `String` was expected",
                         pos,
@@ -812,7 +812,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `int` was expected",
                         pos,
@@ -826,7 +826,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `bool` was expected",
                         pos,
@@ -840,7 +840,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `vector` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `vector` was expected",
                         pos,
@@ -856,7 +856,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `String` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `String` was expected",
                         pos,
@@ -870,7 +870,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `int` was expected",
                         pos,
@@ -884,7 +884,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `bool` was expected",
                         pos,
@@ -898,7 +898,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `vector` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `vector` was expected",
                         pos,
@@ -914,7 +914,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `String` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `String` was expected",
                         pos,
@@ -928,7 +928,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `int` was expected",
                         pos,
@@ -942,7 +942,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `bool` was expected",
                         pos,
@@ -956,7 +956,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `vector` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `vector` was expected",
                         pos,
@@ -972,7 +972,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `String` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `String` was expected",
                         pos,
@@ -986,7 +986,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `int` was expected",
                         pos,
@@ -1000,7 +1000,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `bool` was expected",
                         pos,
@@ -1014,7 +1014,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `vector` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `vector` was expected",
                         pos,
@@ -1030,7 +1030,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `String` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `String` was expected",
                         pos,
@@ -1044,7 +1044,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `int` was expected",
                         pos,
@@ -1058,7 +1058,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `bool` was expected",
                         pos,
@@ -1072,7 +1072,7 @@ impl<'a> Interpreter<'a> {
                         "0002",
                         &format!(
                             "mismatched data types, expected `vector` found {}",
-                            data.to_string()
+                            data
                         ),
                         "a value of type `vector` was expected",
                         pos,

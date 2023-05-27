@@ -253,9 +253,7 @@ impl<'a> Parser<'a> {
                 let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
 
                 let datatype = if datatype.is_none() {
-                    let datatype = self.infer_datatype(&expression);
-
-                    datatype
+                    Self::infer_datatype(&expression)
                 } else {
                     datatype
                 };
@@ -577,11 +575,11 @@ impl<'a> Parser<'a> {
         true
     }
 
-    pub fn infer_datatype(&self, expr: &Expression) -> Option<DataType> {
+    pub fn infer_datatype(expr: &Expression) -> Option<DataType> {
         match expr {
             Expression::BinaryOperation(lhs, _, rhs) => {
-                let lhs = self.infer_datatype(lhs);
-                let rhs = self.infer_datatype(rhs);
+                let lhs = Self::infer_datatype(lhs);
+                let rhs = Self::infer_datatype(rhs);
 
                 if lhs.is_none() || rhs.is_none() {
                     return None;
@@ -650,9 +648,7 @@ impl<'a> Parser<'a> {
 
                     let t = tokens.pop().unwrap();
 
-                    self.check(&t, Token::RSquare);
-
-                    let tokens = tokens.iter().map(|f| *f).collect::<Vec<_>>();
+                    self.check(t, Token::RSquare);
 
                     let (index, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
 
@@ -724,7 +720,7 @@ impl<'a> Parser<'a> {
                     expression.push(token.to_owned());
                 }
                 let datatype = if params.first().is_some() {
-                    self.infer_datatype(params.first().unwrap())
+                    Self::infer_datatype(params.first().unwrap())
                 } else {
                     None
                 };

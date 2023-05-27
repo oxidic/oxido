@@ -163,11 +163,9 @@ impl<'a> Lexer<'a> {
                         continue;
                     }
 
-                    if !char.is_alphabetic() {
-                        if char != '<' && char != '>' {
-                            self.at -= 1;
-                            break;
-                        }
+                    if !char.is_alphabetic() && char != '<' && char != '>' {
+                        self.at -= 1;
+                        break;
                     }
 
                     let ch = if ch?.is_empty() {
