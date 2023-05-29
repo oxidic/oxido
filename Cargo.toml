@@ -1,6 +1,6 @@
 [package]
 name = "oxido"
-version = "2.5.0"
+version = "2.6.0"
 edition = "2021"
 
 [lib]
@@ -30,3 +30,6 @@ wasm-bindgen = "0.2.63"
 console_error_panic_hook = "0.1.6"
 wee_alloc = "0.4.5"
 instant = { version = "0.1.12", features = ["wasm-bindgen"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rustyline = "11.0.0"

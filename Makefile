@@ -8,8 +8,8 @@ build:
 
 wasm:
 	wasm-pack build --target nodejs
+	rm -rf pkg/README.md .wasm
 	mkdir .wasm
-	rm -rf pkg/README.md
 	mv pkg/* .wasm
 
 clear:

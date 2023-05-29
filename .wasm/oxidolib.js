@@ -243,7 +243,7 @@ class Config {
 }
 module.exports.Config = Config;
 
-module.exports.__wbg_log_18d17e3bb5593b86 = function(arg0, arg1) {
+module.exports.__wbg_log_0adfc3d2bef357d3 = function(arg0, arg1) {
     console.log(getStringFromWasm0(arg0, arg1));
 };
 

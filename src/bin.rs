@@ -1,7 +1,9 @@
 use clap::Parser;
-use oxidolib::{Config, run};
+use oxidolib::{run, Config};
 use std::fs::{metadata, read_to_string};
 use std::process::exit;
+use rustyline::error::ReadlineError;
+use rustyline::DefaultEditor;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -26,6 +28,8 @@ struct Args {
     #[clap()]
     input: Option<String>,
 }
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn main() {
     let args = Args::parse();
@@ -62,7 +66,31 @@ fn main() {
             Err(error) => panic!("error while reading file, {error}"),
         }
     } else {
-        println!("expected either file name or contents with -c flag");
+        println!("Welcome to Oxido v{VERSION}.\nTo exit, press CTRL+C or CTRL+D");
+        let mut rl = DefaultEditor::new().unwrap();
+        let mut code = String::new();
+        loop {
+            let readline = rl.readline(">> ");
+            match readline {
+                Ok(line) => {
+                    rl.add_history_entry(&line).unwrap();
+                    code.push_str(&line);
+                    run(String::from("REPL"), code.clone(), Config::new(false, false, false))
+                }
+                Err(ReadlineError::Interrupted) => {
+                    println!("CTRL-C");
+                    break;
+                }
+                Err(ReadlineError::Eof) => {
+                    println!("CTRL-D");
+                    break;
+                }
+                Err(err) => {
+                    println!("Error: {:?}", err);
+                    break;
+                }
+            }
+        }
         exit(1);
     };
 
