@@ -1,5 +1,9 @@
 use lexer::Lexer;
-use std::time::Instant;
+use wasm_bindgen::prelude::wasm_bindgen;
+use instant::Instant;
+
+extern crate console_error_panic_hook;
+use std::panic;
 
 mod ast;
 mod data;
@@ -9,12 +13,15 @@ mod lexer;
 mod parser;
 mod standardlibrary;
 mod token;
+
+#[wasm_bindgen]
 pub struct Config {
     debug: bool,
     dry_run: bool,
     time: bool,
 }
 
+#[wasm_bindgen]
 impl Config {
     pub fn new(debug: bool, dry_run: bool, time: bool) -> Self {
         Self {
@@ -25,7 +32,9 @@ impl Config {
     }
 }
 
+#[wasm_bindgen]
 pub fn run(name: String, contents: String, config: Config) {
+    panic::set_hook(Box::new(console_error_panic_hook::hook));
     let main = Instant::now();
 
     let mut lexer = Lexer::new(&name, &contents);

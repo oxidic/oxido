@@ -74,10 +74,7 @@ mod types {
                 file,
                 "E00011",
                 "incorrect data type",
-                &format!(
-                    "mismatched data types expected `vector` found {}",
-                    data
-                ),
+                &format!("mismatched data types expected `vector` found {}", data),
                 range,
             ),
         }
@@ -143,7 +140,10 @@ mod types {
 
 mod io {
     use crate::data::Data;
-    use std::io::{stdin, Write, stdout};
+    use std::io::{stdin, stdout, Write};
+
+    #[cfg(target_arch = "wasm32")]
+    use wasm_bindgen::prelude::wasm_bindgen;
 
     pub fn read() -> Data {
         let mut s = String::new();
@@ -157,21 +157,39 @@ mod io {
         Data::Str(s)
     }
 
+    #[cfg(target_arch = "wasm32")]
+    pub fn p(data: &str) {
+        #[wasm_bindgen]
+        extern "C" {
+            #[wasm_bindgen(js_namespace = console)]
+            fn log(s: &str);
+        }
+        macro_rules! console_log {
+            ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
+        }
+        console_log!("{data}");
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn p(data: &str) {
+        print!("{data}");
+    }
+
     pub fn print(datas: Vec<Data>) {
         for data in datas {
             match data {
-                Data::Int(i) => print!("{i}"),
-                Data::Bool(b) => print!("{b}"),
-                Data::Str(s) => print!("{s}"),
+                Data::Int(i) => p(&i.to_string()),
+                Data::Bool(b) => p(&b.to_string()),
+                Data::Str(s) => p(&s),
                 Data::Vector(vec, _) => {
-                    print!("[");
+                    p("[");
                     for (i, v) in vec.iter().enumerate() {
                         print(vec![v.clone()]);
                         if i != vec.len() - 1 {
-                            print!(", ");
+                            p(", ");
                         }
                     }
-                    print!("]")
+                    p("]")
                 }
             }
         }
@@ -181,23 +199,23 @@ mod io {
 
     pub fn println(datas: Vec<Data>) {
         if datas.is_empty() {
-            println!();
+            p("\n");
             return;
         }
         for data in datas {
             match data {
-                Data::Int(i) => println!("{i}"),
-                Data::Bool(b) => println!("{b}"),
-                Data::Str(s) => println!("{s}"),
+                Data::Int(i) => p(&format!("{i}\n")),
+                Data::Bool(b) => p(&format!("{b}\n")),
+                Data::Str(s) => p(&format!("{s}\n")),
                 Data::Vector(vec, _) => {
-                    print!("[");
+                    p("[");
                     for (i, v) in vec.iter().enumerate() {
                         print(vec![v.clone()]);
                         if i != vec.len() - 1 {
-                            print!(", ");
+                            p(", ");
                         }
                     }
-                    print!("]")
+                    p("]")
                 }
             }
         }

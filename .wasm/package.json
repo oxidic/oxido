@@ -1,0 +1,11 @@
+{
+  "name": "oxido",
+  "version": "2.5.0",
+  "files": [
+    "oxidolib_bg.wasm",
+    "oxidolib.js",
+    "oxidolib.d.ts"
+  ],
+  "main": "oxidolib.js",
+  "types": "oxidolib.d.ts"
+}

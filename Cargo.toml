@@ -6,6 +6,7 @@ edition = "2021"
 [lib]
 name = "oxidolib"
 path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
 
 [[bin]]
 name = "oxidobin"
@@ -19,6 +20,13 @@ opt-level = "z"
 opt-level = 3
 debug = true
 
+[dev-dependencies]
+wasm-bindgen-test = "0.3.13"
+
 [dependencies]
 clap = { version = "3.1.18", features = ["derive"] }
 codespan-reporting = "0.11.1"
+wasm-bindgen = "0.2.63"
+console_error_panic_hook = "0.1.6"
+wee_alloc = "0.4.5"
+instant = { version = "0.1.12", features = ["wasm-bindgen"] }
