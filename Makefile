@@ -7,7 +7,7 @@ build:
 	cargo build --release
 
 wasm:
-	wasm-pack build --target nodejs
+	wasm-pack build --target web
 	rm -rf pkg/README.md .wasm
 	mkdir .wasm
 	mv pkg/* .wasm

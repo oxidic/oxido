@@ -1,5 +1,5 @@
 use clap::Parser;
-use oxidolib::{run, Config};
+use oxidolib::{run, Config, version};
 use std::fs::{metadata, read_to_string};
 use std::process::exit;
 use rustyline::error::ReadlineError;
@@ -28,8 +28,6 @@ struct Args {
     #[clap()]
     input: Option<String>,
 }
-
-const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn main() {
     let args = Args::parse();
@@ -66,7 +64,7 @@ fn main() {
             Err(error) => panic!("error while reading file, {error}"),
         }
     } else {
-        println!("Welcome to Oxido v{VERSION}.\nTo exit, press CTRL+C or CTRL+D");
+        println!("Welcome to Oxido v{}.\nTo exit, press CTRL+C or CTRL+D", version());
         let mut rl = DefaultEditor::new().unwrap();
         let mut code = String::new();
         loop {

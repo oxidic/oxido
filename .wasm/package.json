@@ -6,6 +6,9 @@
     "oxidolib.js",
     "oxidolib.d.ts"
   ],
-  "main": "oxidolib.js",
-  "types": "oxidolib.d.ts"
+  "module": "oxidolib.js",
+  "types": "oxidolib.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
 }
