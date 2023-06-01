@@ -1,11 +1,13 @@
-use clap::Parser;
-use oxidolib::{run, Config, version};
-use std::fs::{metadata, read_to_string};
-use std::process::exit;
+use clap::Parser as ClapParser;
+use oxidolib::interpreter::Interpreter;
+use oxidolib::lexer::Lexer;
+use oxidolib::{parser::Parser, run, version, Config};
 use rustyline::error::ReadlineError;
 use rustyline::DefaultEditor;
+use std::fs::{metadata, read_to_string};
+use std::process::exit;
 
-#[derive(Parser, Debug)]
+#[derive(ClapParser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
     /// Whether to output debug information
@@ -64,16 +66,24 @@ fn main() {
             Err(error) => panic!("error while reading file, {error}"),
         }
     } else {
-        println!("Welcome to Oxido v{}.\nTo exit, press CTRL+C or CTRL+D", version());
+        println!(
+            "Welcome to Oxido v{}\nTo exit, press CTRL+C or CTRL+D",
+            version()
+        );
         let mut rl = DefaultEditor::new().unwrap();
-        let mut code = String::new();
+        let mut interpreter = Interpreter::new("REPL", "");
         loop {
-            let readline = rl.readline(">> ");
+            let readline = rl.readline("\x1b[1m\x1b[32m[In]:\x1b[0m ");
             match readline {
                 Ok(line) => {
-                    rl.add_history_entry(&line).unwrap();
-                    code.push_str(&line);
-                    run(String::from("REPL"), code.clone(), Config::new(false, false, false))
+                    let ast = Parser::new("REPL", "")
+                        .run(Lexer::new("REPL", &line).run().unwrap().to_vec())
+                        .unwrap()
+                        .to_vec();
+
+                    print!("\x1b[1m\x1b[31m[Out]:\x1b[0m ");
+                    interpreter.run(ast);
+                    println!("\n");
                 }
                 Err(ReadlineError::Interrupted) => {
                     println!("CTRL-C");

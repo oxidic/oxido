@@ -4,6 +4,7 @@ use crate::{
     token::{Token, Tokens},
 };
 
+#[derive(Debug, Clone)]
 pub struct Lexer<'a> {
     name: &'a str,
     file: &'a str,

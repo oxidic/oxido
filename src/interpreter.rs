@@ -8,6 +8,7 @@ use crate::{
     token::Token,
 };
 
+#[derive(Debug, Clone)]
 pub struct Interpreter<'a> {
     name: &'a str,
     file: &'a str,

@@ -7,6 +7,7 @@ use crate::{
     token::{Token, Tokens},
 };
 
+#[derive(Debug, Clone)]
 pub struct Parser<'a> {
     name: &'a str,
     file: &'a str,

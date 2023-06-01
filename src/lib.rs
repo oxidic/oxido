@@ -8,9 +8,9 @@ use std::panic;
 mod ast;
 mod data;
 mod error;
-mod interpreter;
-mod lexer;
-mod parser;
+pub mod interpreter;
+pub mod lexer;
+pub mod parser;
 mod standardlibrary;
 mod token;
 

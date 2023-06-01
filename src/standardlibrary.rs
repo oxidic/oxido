@@ -2,6 +2,7 @@ use std::ops::Range;
 
 use crate::data::Data;
 
+#[derive(Debug, Clone)]
 pub struct StandardLibrary<'a> {
     name: &'a str,
     file: &'a str,
