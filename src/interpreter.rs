@@ -11,7 +11,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct Interpreter<'a> {
     name: &'a str,
-    file: &'a str,
+    file: String,
     stop: bool,
     returned: Option<Data>,
     variables: HashMap<String, Variable>,
@@ -20,16 +20,20 @@ pub struct Interpreter<'a> {
 }
 
 impl<'a> Interpreter<'a> {
-    pub fn new(name: &'a str, file: &'a str) -> Self {
+    pub fn new(name: &'a str, file: String) -> Self {
         Self {
             name,
-            file,
+            file: file.clone(),
             stop: false,
             returned: None,
             variables: HashMap::new(),
             functions: HashMap::new(),
             std: StandardLibrary::new(name, file),
         }
+    }
+
+    pub fn set_file(&mut self, file: String) {
+        self.file = file;
     }
 
     pub fn run(&mut self, ast: Ast) {
@@ -43,7 +47,7 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn match_node(&mut self, node: (AstNode, Range<usize>)) {
+    fn match_node(&mut self, node: (AstNode, Range<usize>)) {
         if self.stop || self.returned.is_some() {
             return;
         }
@@ -58,11 +62,11 @@ impl<'a> Interpreter<'a> {
                 if datatype != data.r#type() {
                     error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "E00011",
                         "incorrect data type",
                         &format!(
-                            "mismatched data types expected {} found {}",
+                            "mismatched data types expected {} fond {:?}",
                             datatype,
                             data
                         ),
@@ -75,7 +79,7 @@ impl<'a> Interpreter<'a> {
                 if !self.variables.contains_key(&ident) {
                     error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0005",
                         "undeclared variable",
                         "attempted to access value of undeclared variable",
@@ -87,7 +91,7 @@ impl<'a> Interpreter<'a> {
                 if datatype != data.r#type() {
                     error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "E00011",
                         "incorrect data type",
                         &format!(
@@ -110,7 +114,7 @@ impl<'a> Interpreter<'a> {
                         if index as usize > vec.len() {
                             error(
                                 self.name,
-                                self.file,
+                                &self.file,
                                 "E0006",
                                 "index out of bounds",
                                 "index out of bounds",
@@ -121,7 +125,7 @@ impl<'a> Interpreter<'a> {
                         if datatype != DataType::Vector(Box::new(data.r#type())) {
                             error(
                                 self.name,
-                                self.file,
+                                &self.file,
                                 "E00011",
                                 "incorrect data type",
                                 &format!(
@@ -145,7 +149,7 @@ impl<'a> Interpreter<'a> {
                     } else {
                         error(
                             self.name,
-                            self.file,
+                            &self.file,
                             "0002",
                             &format!(
                                 "mismatched data types, expected `int` found {}",
@@ -158,7 +162,7 @@ impl<'a> Interpreter<'a> {
                 } else {
                     error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `vector` found {}",
@@ -186,7 +190,7 @@ impl<'a> Interpreter<'a> {
                 } else {
                     error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
@@ -217,7 +221,7 @@ impl<'a> Interpreter<'a> {
                 } else {
                     error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
@@ -262,7 +266,7 @@ impl<'a> Interpreter<'a> {
                     if args.len() != function.params.len() {
                         error(
                             self.name,
-                            self.file,
+                            &self.file,
                             "0004",
                             "not enough arguments were passed",
                             &format!(
@@ -280,7 +284,7 @@ impl<'a> Interpreter<'a> {
                         if param.datatype != arg.r#type() {
                             error(
                                 self.name,
-                                self.file,
+                                &self.file,
                                 "E00011",
                                 "incorrect data type",
                                 &format!(
@@ -315,7 +319,7 @@ impl<'a> Interpreter<'a> {
                 } else {
                     error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0004",
                         "function does not exist",
                         "tried to call a function which does not exist",
@@ -343,7 +347,7 @@ impl<'a> Interpreter<'a> {
                     _ => {
                         error(
                             self.name,
-                            self.file,
+                            &self.file,
                             "0002",
                             &format!(
                                 "mismatched data types, expected `int` found {}",
@@ -358,7 +362,7 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn parse_function(&mut self, f: String, args: Vec<Expression>, pos: &Range<usize>) -> Data {
+    fn parse_function(&mut self, f: String, args: Vec<Expression>, pos: &Range<usize>) -> Data {
         if self.std.contains(&f) {
             let args = args
                 .iter()
@@ -368,7 +372,7 @@ impl<'a> Interpreter<'a> {
                 Some(data) => data,
                 None => error(
                     self.name,
-                    self.file,
+                    &self.file,
                     "0004",
                     "function does not return a value",
                     "function does not a return a value",
@@ -382,7 +386,7 @@ impl<'a> Interpreter<'a> {
         if datatype.is_none() {
             error(
                 self.name,
-                self.file,
+                &self.file,
                 "0004",
                 "function does not return a value",
                 "function does not a return a value",
@@ -393,7 +397,7 @@ impl<'a> Interpreter<'a> {
         if args.len() != function.params.len() {
             error(
                 self.name,
-                self.file,
+                &self.file,
                 "0004",
                 "not enough arguments were passed",
                 &format!(
@@ -413,7 +417,7 @@ impl<'a> Interpreter<'a> {
             if param.datatype != data.r#type() {
                 error(
                     self.name,
-                    self.file,
+                    &self.file,
                     "E00011",
                     &format!(
                         "mismatched data types expected {} found {}",
@@ -436,7 +440,7 @@ impl<'a> Interpreter<'a> {
             if stream.peek().is_none() {
                 error(
                     self.name,
-                    self.file,
+                    &self.file,
                     "0004",
                     &format!("function {f} did not return a value"),
                     "expected function to return a value",
@@ -453,7 +457,7 @@ impl<'a> Interpreter<'a> {
                 if data.r#type() != datatype.clone().unwrap() {
                     error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0004",
                         &format!(
                             "mismatched data types expected {} found {}",
@@ -469,7 +473,7 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn parse_expression(
+    fn parse_expression(
         &mut self,
         expr: Expression,
         datatype: Option<DataType>,
@@ -499,7 +503,7 @@ impl<'a> Interpreter<'a> {
                     } else if datatype.clone().unwrap() != d.r#type() {
                         error(
                             self.name,
-                            self.file,
+                            &self.file,
                             "0004",
                             &format!(
                                 "mismatched data types expected {} found {}",
@@ -525,7 +529,7 @@ impl<'a> Interpreter<'a> {
                             if i < 0 {
                                 error(
                                     self.name,
-                                    self.file,
+                                    &self.file,
                                     "E0004",
                                     "index cannot be negative",
                                     "index cannot be negative",
@@ -536,7 +540,7 @@ impl<'a> Interpreter<'a> {
                                 Some(data) => data.to_owned(),
                                 None => error(
                                     self.name,
-                                    self.file,
+                                    &self.file,
                                     "E0004",
                                     &format!("index out of bounds, index {} is out of bounds for vector of length {}", i, vec.len()),
                                     "index out of bounds",
@@ -546,7 +550,7 @@ impl<'a> Interpreter<'a> {
                         }
                         data => error(
                             self.name,
-                            self.file,
+                            &self.file,
                             "E0004",
                             &format!(
                                 "mismatched data types, expected `int` found {}",
@@ -558,7 +562,7 @@ impl<'a> Interpreter<'a> {
                     },
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0004",
                         &format!(
                             "mismatched data types, expected `vector` found {}",
@@ -572,7 +576,7 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn parse_binary_operation(
+    fn parse_binary_operation(
         &mut self,
         lhs: Expression,
         op: Token,
@@ -588,7 +592,7 @@ impl<'a> Interpreter<'a> {
                     Data::Str(s) => Data::Str(str + &s),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `String` found {}",
@@ -602,7 +606,7 @@ impl<'a> Interpreter<'a> {
                     Data::Int(m) => Data::Int(n + m),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -614,7 +618,7 @@ impl<'a> Interpreter<'a> {
                 },
                 data => error(
                     self.name,
-                    self.file,
+                    &self.file,
                     "0002",
                     &format!(
                         "mismatched data types, expected `String` or `int` found {}",
@@ -629,7 +633,7 @@ impl<'a> Interpreter<'a> {
                     Data::Int(m) => Data::Int(n - m),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -641,7 +645,7 @@ impl<'a> Interpreter<'a> {
                 },
                 data => error(
                     self.name,
-                    self.file,
+                    &self.file,
                     "0002",
                     &format!(
                         "mismatched data types, expected `int` found {}",
@@ -656,7 +660,7 @@ impl<'a> Interpreter<'a> {
                     Data::Int(m) => Data::Int(n * m),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -668,7 +672,7 @@ impl<'a> Interpreter<'a> {
                 },
                 data => error(
                     self.name,
-                    self.file,
+                    &self.file,
                     "0002",
                     &format!(
                         "mismatched data types, expected `int` found {}",
@@ -683,7 +687,7 @@ impl<'a> Interpreter<'a> {
                     Data::Int(m) => Data::Int(n / m),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -695,7 +699,7 @@ impl<'a> Interpreter<'a> {
                 },
                 data => error(
                     self.name,
-                    self.file,
+                    &self.file,
                     "0002",
                     &format!(
                         "mismatched data types, expected `int` found {}",
@@ -710,7 +714,7 @@ impl<'a> Interpreter<'a> {
                     Data::Int(m) => Data::Int(n.pow(m as u32)),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -722,7 +726,7 @@ impl<'a> Interpreter<'a> {
                 },
                 data => error(
                     self.name,
-                    self.file,
+                    &self.file,
                     "0002",
                     &format!(
                         "mismatched data types, expected `int` found {}",
@@ -737,7 +741,7 @@ impl<'a> Interpreter<'a> {
                     Data::Str(s) => Data::Bool(str == s),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `String` found {}",
@@ -751,7 +755,7 @@ impl<'a> Interpreter<'a> {
                     Data::Int(m) => Data::Bool(n == m),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -765,7 +769,7 @@ impl<'a> Interpreter<'a> {
                     Data::Bool(d) => Data::Bool(b == d),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
@@ -779,7 +783,7 @@ impl<'a> Interpreter<'a> {
                     Data::Vector(v2, _) => Data::Bool(v1 == v2),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `vector` found {}",
@@ -795,7 +799,7 @@ impl<'a> Interpreter<'a> {
                     Data::Str(s) => Data::Bool(str != s),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `String` found {}",
@@ -809,7 +813,7 @@ impl<'a> Interpreter<'a> {
                     Data::Int(m) => Data::Bool(n != m),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -823,7 +827,7 @@ impl<'a> Interpreter<'a> {
                     Data::Bool(d) => Data::Bool(b != d),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
@@ -837,7 +841,7 @@ impl<'a> Interpreter<'a> {
                     Data::Vector(v2, _) => Data::Bool(v1 != v2),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `vector` found {}",
@@ -853,7 +857,7 @@ impl<'a> Interpreter<'a> {
                     Data::Str(s) => Data::Bool(str > s),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `String` found {}",
@@ -867,7 +871,7 @@ impl<'a> Interpreter<'a> {
                     Data::Int(m) => Data::Bool(n > m),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -881,7 +885,7 @@ impl<'a> Interpreter<'a> {
                     Data::Bool(d) => Data::Bool(b & !d),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
@@ -895,7 +899,7 @@ impl<'a> Interpreter<'a> {
                     Data::Vector(v2, _) => Data::Bool(v1 > v2),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `vector` found {}",
@@ -911,7 +915,7 @@ impl<'a> Interpreter<'a> {
                     Data::Str(s) => Data::Bool(str < s),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `String` found {}",
@@ -925,7 +929,7 @@ impl<'a> Interpreter<'a> {
                     Data::Int(m) => Data::Bool(n < m),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -939,7 +943,7 @@ impl<'a> Interpreter<'a> {
                     Data::Bool(d) => Data::Bool(!b & d),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
@@ -953,7 +957,7 @@ impl<'a> Interpreter<'a> {
                     Data::Vector(v2, _) => Data::Bool(v1 < v2),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `vector` found {}",
@@ -969,7 +973,7 @@ impl<'a> Interpreter<'a> {
                     Data::Str(s) => Data::Bool(str >= s),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `String` found {}",
@@ -983,7 +987,7 @@ impl<'a> Interpreter<'a> {
                     Data::Int(m) => Data::Bool(n >= m),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -997,7 +1001,7 @@ impl<'a> Interpreter<'a> {
                     Data::Bool(d) => Data::Bool(b >= d),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
@@ -1011,7 +1015,7 @@ impl<'a> Interpreter<'a> {
                     Data::Vector(v2, _) => Data::Bool(v1 >= v2),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `vector` found {}",
@@ -1027,7 +1031,7 @@ impl<'a> Interpreter<'a> {
                     Data::Str(s) => Data::Bool(str <= s),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `String` found {}",
@@ -1041,7 +1045,7 @@ impl<'a> Interpreter<'a> {
                     Data::Int(m) => Data::Bool(n <= m),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `int` found {}",
@@ -1055,7 +1059,7 @@ impl<'a> Interpreter<'a> {
                     Data::Bool(d) => Data::Bool(b <= d),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `bool` found {}",
@@ -1069,7 +1073,7 @@ impl<'a> Interpreter<'a> {
                     Data::Vector(v2, _) => Data::Bool(v1 <= v2),
                     data => error(
                         self.name,
-                        self.file,
+                        &self.file,
                         "0002",
                         &format!(
                             "mismatched data types, expected `vector` found {}",

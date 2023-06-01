@@ -71,18 +71,26 @@ fn main() {
             version()
         );
         let mut rl = DefaultEditor::new().unwrap();
-        let mut interpreter = Interpreter::new("REPL", "");
+        let mut interpreter = Interpreter::new("REPL", String::new());
         loop {
             let readline = rl.readline("\x1b[1m\x1b[32m[In]:\x1b[0m ");
             match readline {
                 Ok(line) => {
-                    let ast = Parser::new("REPL", "")
-                        .run(Lexer::new("REPL", &line).run().unwrap().to_vec())
-                        .unwrap()
-                        .to_vec();
+                    if line.trim() == "exit" {
+                        break;
+                    }
+                    interpreter.set_file(line.clone());
 
                     print!("\x1b[1m\x1b[31m[Out]:\x1b[0m ");
-                    interpreter.run(ast);
+
+                    interpreter.run(
+                        Parser::new("REPL", "")
+                            .run(Lexer::new("REPL", &line).run().unwrap().to_vec())
+                            .unwrap()
+                            .to_vec(),
+                    );
+
+                    interpreter.set_file(String::new());
                     println!("\n");
                 }
                 Err(ReadlineError::Interrupted) => {

@@ -24,7 +24,7 @@ impl<'a> Parser<'a> {
         Some(ast)
     }
 
-    pub fn match_tokens(&'a self, tokens: Tokens) -> Option<Ast> {
+    fn match_tokens(&'a self, tokens: Tokens) -> Option<Ast> {
         let mut pos = 0;
         let mut nodes: Ast = vec![];
 
@@ -225,7 +225,7 @@ impl<'a> Parser<'a> {
         Some(nodes)
     }
 
-    pub fn parse(&'a self, tokens: Vec<&'a (Token, usize)>) -> Option<(AstNode, Range<usize>)> {
+    fn parse(&'a self, tokens: Vec<&'a (Token, usize)>) -> Option<(AstNode, Range<usize>)> {
         let mut stream = tokens.iter().peekable();
 
         let token = *stream.next()?;
@@ -241,13 +241,13 @@ impl<'a> Parser<'a> {
                     None
                 };
 
-                self.check(stream.next()?, Token::Equal);
+                self.check(stream.next().copied(), Token::Equal);
 
                 let mut tokens = stream.collect::<Vec<_>>();
 
-                let t = tokens.pop()?;
+                let t = tokens.pop();
 
-                self.check(t, Token::Semicolon);
+                self.check(t.copied(), Token::Semicolon);
 
                 let tokens = tokens.iter().map(|f| **f).collect::<Vec<_>>();
 
@@ -261,7 +261,7 @@ impl<'a> Parser<'a> {
 
                 (
                     AstNode::Assignment(ident.to_string(), datatype, expression),
-                    token.1..t.1,
+                    token.1..t?.1,
                 )
             } else {
                 error(
@@ -278,9 +278,9 @@ impl<'a> Parser<'a> {
                 stream.next()?;
                 let mut tokens = stream.collect::<Vec<_>>();
 
-                let t = tokens.pop()?;
+                let t = tokens.pop();
 
-                self.check(t, Token::Semicolon);
+                self.check(t.copied(), Token::Semicolon);
 
                 let mut index_tokens = vec![];
                 let mut expr_tokens = vec![];
@@ -301,22 +301,22 @@ impl<'a> Parser<'a> {
 
                 let (index, _) = self.pratt_parser(index_tokens.into_iter().peekable(), 0);
 
-                self.check(expr_tokens.remove(0), Token::Equal);
+                self.check(Some(expr_tokens.remove(0)), Token::Equal);
 
                 let (expression, _) = self.pratt_parser(expr_tokens.into_iter().peekable(), 0);
 
                 (
                     AstNode::VecReAssignment(ident.to_string(), index, expression),
-                    token.1..t.1,
+                    token.1..t?.1,
                 )
             } else {
-                self.check(stream.next()?, Token::Equal);
+                self.check(stream.next().copied(), Token::Equal);
 
                 let mut tokens = stream.collect::<Vec<_>>();
 
-                let t = tokens.pop()?;
+                let t = tokens.pop();
 
-                self.check(t, Token::Semicolon);
+                self.check(t.copied(), Token::Semicolon);
 
                 let tokens = tokens.iter().map(|f| **f).collect::<Vec<_>>();
 
@@ -324,7 +324,7 @@ impl<'a> Parser<'a> {
 
                 (
                     AstNode::ReAssignment(ident.to_string(), expression),
-                    token.1..t.1,
+                    token.1..t?.1,
                 )
             }
         } else if token.0 == Token::If {
@@ -351,48 +351,48 @@ impl<'a> Parser<'a> {
                 }
             }
 
-            let mut t = then.pop()?;
+            let mut t = then.pop();
 
-            self.check(&t, Token::RCurly);
+            self.check(t.as_ref(), Token::RCurly);
 
             let tokens = tokens.iter().map(|f| **f).collect::<Vec<_>>();
 
             let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
 
             if otherwise.is_some() {
-                t = otherwise.as_mut()?.pop()?;
-                self.check(&otherwise.as_mut()?.remove(0), Token::Else);
-                self.check(&t, Token::RCurly);
+                t = otherwise.as_mut()?.pop();
+                self.check(Some(&otherwise.as_mut()?.remove(0)), Token::Else);
+                self.check(t.as_ref(), Token::RCurly);
                 (
                     AstNode::IfElse(
                         expression,
                         self.match_tokens(then)?,
                         self.match_tokens(otherwise?)?,
                     ),
-                    token.1..t.1,
+                    token.1..t?.1,
                 )
             } else {
                 (
                     AstNode::If(expression, self.match_tokens(then)?),
-                    token.1..t.1,
+                    token.1..t?.1,
                 )
             }
         } else if token.0 == Token::Loop {
             let mut statements = vec![];
 
-            self.check(stream.next()?, Token::LCurly);
+            self.check(stream.next().copied(), Token::LCurly);
 
             for token in stream {
                 statements.push((*token).to_owned());
             }
 
-            let t = statements.pop()?;
+            let t = statements.pop();
 
-            self.check(&t, Token::RCurly);
+            self.check(t.as_ref(), Token::RCurly);
 
-            (AstNode::Loop(self.match_tokens(statements)?), token.1..t.1)
+            (AstNode::Loop(self.match_tokens(statements)?), token.1..t?.1)
         } else if let Token::FunctionName(ident) = &token.0 {
-            self.check(stream.next()?, Token::LParen);
+            self.check(stream.next().copied(), Token::LParen);
 
             let tokens = stream.map(|f| f.to_owned()).collect::<Vec<_>>();
             let mut params = vec![];
@@ -484,7 +484,7 @@ impl<'a> Parser<'a> {
                     )
                 };
 
-                self.check(stream.next()?, Token::LCurly);
+                self.check(stream.next().copied(), Token::LCurly);
 
                 let mut statements = vec![];
 
@@ -500,9 +500,9 @@ impl<'a> Parser<'a> {
                     statements.push((*token).to_owned());
                 }
 
-                let t = statements.pop()?;
+                let t = statements.pop();
 
-                self.check(&t, Token::RCurly);
+                self.check(t.as_ref(), Token::RCurly);
 
                 (
                     AstNode::FunctionDeclaration(
@@ -511,7 +511,7 @@ impl<'a> Parser<'a> {
                         Some(datatype.clone()),
                         self.match_tokens(statements)?,
                     ),
-                    token.1..t.1,
+                    token.1..t?.1,
                 )
             } else {
                 error(
@@ -526,27 +526,27 @@ impl<'a> Parser<'a> {
         } else if token.0 == Token::Return {
             let mut tokens = stream.collect::<Vec<_>>();
 
-            let t = tokens.pop()?;
+            let t = tokens.pop();
 
-            self.check(t, Token::Semicolon);
+            self.check(t.copied(), Token::Semicolon);
 
             let tokens = tokens.iter().map(|f| **f).collect::<Vec<_>>();
 
             let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
 
-            (AstNode::Return(expression), token.1..t.1)
+            (AstNode::Return(expression), token.1..t?.1)
         } else if token.0 == Token::Exit {
             let mut tokens = stream.collect::<Vec<_>>();
 
-            let t = tokens.pop()?;
+            let t = tokens.pop();
 
-            self.check(t, Token::Semicolon);
+            self.check(t.copied(), Token::Semicolon);
 
             let tokens = tokens.iter().map(|f| **f).collect::<Vec<_>>();
 
             let (expression, _) = self.pratt_parser(tokens.into_iter().peekable(), 0);
 
-            (AstNode::Exit(expression), token.1..t.1)
+            (AstNode::Exit(expression), token.1..t?.1)
         } else {
             error(
                 self.name,
@@ -561,15 +561,15 @@ impl<'a> Parser<'a> {
         Some(node)
     }
 
-    pub fn check(&self, t1: &(Token, usize), t2: Token) -> bool {
-        if t1.0 != t2 {
+    fn check(&self, t1: Option<&(Token, usize)>, t2: Token) -> bool {
+        if t1.is_none() || t1.unwrap().0 != t2 {
             error(
                 self.name,
                 self.file,
                 "0001",
-                &format!("expected `{}` found {}", t2.as_string(), t1.0.as_string()),
+                &format!("expected `{}` found {}", t2.as_string(), t1.unwrap().0.as_string()),
                 &format!("use `{}` here", t2.as_string()),
-                &(t1.1 - 1..t1.1 + t2.len() - 1),
+                &(t1.unwrap().1 - 1..t1.unwrap().1 + t2.len() - 1),
             );
         };
 
@@ -609,7 +609,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn pratt_parser(
+    fn pratt_parser(
         &'a self,
         mut lexer: Peekable<IntoIter<&'a (Token, usize)>>,
         prec: u16,
@@ -647,7 +647,7 @@ impl<'a> Parser<'a> {
                         }
                     }
 
-                    let t = tokens.pop().unwrap();
+                    let t = tokens.pop();
 
                     self.check(t, Token::RSquare);
 
@@ -844,7 +844,7 @@ impl<'a> Parser<'a> {
         (expr.unwrap(), lexer)
     }
 
-    pub fn infix_binding_power(&self, op: &(Token, usize)) -> u16 {
+    fn infix_binding_power(&self, op: &(Token, usize)) -> u16 {
         match op.0 {
             Token::RCurly | Token::LCurly => 0,
             Token::Addition => 1,

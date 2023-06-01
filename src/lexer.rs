@@ -58,8 +58,7 @@ impl<'a> Lexer<'a> {
                 loop {
                     let ch = stream.peek();
                     self.at += 1;
-
-                    if ch.is_none() {
+                    if ch.is_none() || ch?.is_empty() {
                         if self.at > size {
                             break;
                         }
@@ -119,7 +118,7 @@ impl<'a> Lexer<'a> {
                     let ch = stream.peek();
                     self.at += 1;
 
-                    if ch.is_none() {
+                    if ch.is_none() || ch?.is_empty() {
                         if self.at > size {
                             break;
                         }

@@ -61,7 +61,7 @@ pub fn run(name: String, contents: String, config: Config) {
         return;
     }
 
-    let mut interpreter = interpreter::Interpreter::new(&name, &contents);
+    let mut interpreter = interpreter::Interpreter::new(&name, contents);
     interpreter.run(ast.to_vec());
 
     if config.debug || config.time {

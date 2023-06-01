@@ -5,11 +5,11 @@ use crate::data::Data;
 #[derive(Debug, Clone)]
 pub struct StandardLibrary<'a> {
     name: &'a str,
-    file: &'a str,
+    file: String,
 }
 
 impl<'a> StandardLibrary<'a> {
-    pub fn new(name: &'a str, file: &'a str) -> Self {
+    pub fn new(name: &'a str, file: String) -> Self {
         Self { name, file }
     }
     pub fn contains(&self, x: &str) -> bool {
@@ -29,25 +29,25 @@ impl<'a> StandardLibrary<'a> {
             "read" => Some(io::read()),
             "int" => Some(types::int(
                 self.name,
-                self.file,
+                &self.file,
                 range,
                 params.first()?.to_owned(),
             )),
             "bool" => Some(types::bool(
                 self.name,
-                self.file,
+                &self.file,
                 range,
                 params.first()?.to_owned(),
             )),
             "str" => Some(types::str(
                 self.name,
-                self.file,
+                &self.file,
                 range,
                 params.first()?.to_owned(),
             )),
             "vec" => Some(types::vec(
                 self.name,
-                self.file,
+                &self.file,
                 range,
                 params.first()?.to_owned(),
             )),

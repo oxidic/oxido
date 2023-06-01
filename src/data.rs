@@ -15,7 +15,7 @@ impl Data {
             Data::Str(_) => DataType::Str,
             Data::Int(_) => DataType::Int,
             Data::Bool(_) => DataType::Bool,
-            Data::Vector(_, t) => t.clone(),
+            Data::Vector(_, t) => DataType::Vector(Box::new(t.clone())),
         }
     }
 }
