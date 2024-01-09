@@ -33,7 +33,7 @@ Oxido uses waterfall approach to files, for a directory/file `example`, Oxido wi
 
 ## Installation
 
-[Oxate](https://github.com/oxidite/oxate), the official installer can be used to install the latest release from GitHub.
+[Oxate](https://github.com/oxidic/oxate), the official installer can be used to install the latest release from GitHub.
 
 ```bash
 oxate install
