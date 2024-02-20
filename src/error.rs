@@ -7,27 +7,29 @@ use codespan_reporting::term;
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 
 pub fn error(
-    name: &str,
-    file: &str,
-    code: &str,
-    message: &str,
-    note: &str,
-    range: &Range<usize>,
+	name: &str,
+	file: &str,
+	code: &str,
+	message: &str,
+	note: &str,
+	range: &Range<usize>,
 ) -> ! {
-    let mut files = SimpleFiles::new();
+	let mut files = SimpleFiles::new();
 
-    let file_id = files.add(name, file);
+	let file_id = files.add(name, file);
 
-    let diagnostic = Diagnostic::error()
-        .with_message(message)
-        .with_code("E".to_owned() + code)
-        .with_labels(vec![Label::primary(file_id, range.clone()).with_message(note)])
-        .with_notes(vec!["note: ".to_owned() + note]);
+	let diagnostic = Diagnostic::error()
+		.with_message(message)
+		.with_code("E".to_owned() + code)
+		.with_labels(vec![
+			Label::primary(file_id, range.clone()).with_message(note)
+		])
+		.with_notes(vec!["note: ".to_owned() + note]);
 
-    let writer = StandardStream::stderr(ColorChoice::Always);
-    let config = codespan_reporting::term::Config::default();
+	let writer = StandardStream::stderr(ColorChoice::Always);
+	let config = codespan_reporting::term::Config::default();
 
-    term::emit(&mut writer.lock(), &config, &files, &diagnostic).unwrap();
+	term::emit(&mut writer.lock(), &config, &files, &diagnostic).unwrap();
 
-    exit(1)
+	exit(1)
 }

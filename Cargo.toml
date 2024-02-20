@@ -30,6 +30,7 @@ wasm-bindgen = "0.2.63"
 console_error_panic_hook = "0.1.6"
 wee_alloc = "0.4.5"
 instant = { version = "0.1.12", features = ["wasm-bindgen"] }
+inkwell = { version = "0.4.0", features = ["llvm17-0"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 rustyline = "11.0.0"
