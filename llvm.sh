@@ -20,7 +20,7 @@ usage() {
     exit 1;
 }
 
-CURRENT_LLVM_STABLE=17
+CURRENT_LLVM_STABLE=18
 BASE_URL="http://apt.llvm.org"
 
 # Check for required tools
@@ -50,9 +50,9 @@ source /etc/os-release
 DISTRO=${DISTRO,,}
 case ${DISTRO} in
     debian)
-        if [[ "${VERSION}" == "unstable" ]] || [[ "${VERSION}" == "testing" ]] || [[ "${VERSION_CODENAME}" == "bookworm" ]]; then
-            # For now, bookworm == sid.
-            # TODO change when bookworm is released
+        # Debian Trixie has a workaround because of
+        # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1038383
+        if [[ "${VERSION}" == "unstable" ]] || [[ "${VERSION}" == "testing" ]] || [[ "${VERSION_CODENAME}" == "trixie" ]]; then
             CODENAME=unstable
             LINKNAME=
         else
@@ -126,6 +126,8 @@ LLVM_VERSION_PATTERNS[14]="-14"
 LLVM_VERSION_PATTERNS[15]="-15"
 LLVM_VERSION_PATTERNS[16]="-16"
 LLVM_VERSION_PATTERNS[17]="-17"
+LLVM_VERSION_PATTERNS[18]="-18"
+LLVM_VERSION_PATTERNS[19]=""
 
 if [ ! ${LLVM_VERSION_PATTERNS[$LLVM_VERSION]+_} ]; then
     echo "This script does not support LLVM version $LLVM_VERSION"

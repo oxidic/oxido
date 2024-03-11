@@ -3,15 +3,6 @@ name = "oxido"
 version = "2.6.0"
 edition = "2021"
 
-[lib]
-name = "oxidolib"
-path = "src/lib.rs"
-crate-type = ["cdylib", "rlib"]
-
-[[bin]]
-name = "oxidobin"
-path = "src/bin.rs"
-
 [profile.release]
 strip = true
 opt-level = "z"
@@ -20,17 +11,8 @@ opt-level = "z"
 opt-level = 3
 debug = true
 
-[dev-dependencies]
-wasm-bindgen-test = "0.3.13"
-
 [dependencies]
 clap = { version = "3.1.18", features = ["derive"] }
 codespan-reporting = "0.11.1"
-wasm-bindgen = "0.2.63"
-console_error_panic_hook = "0.1.6"
-wee_alloc = "0.4.5"
-instant = { version = "0.1.12", features = ["wasm-bindgen"] }
 inkwell = { version = "0.4.0", features = ["llvm17-0"] }
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 rustyline = "11.0.0"

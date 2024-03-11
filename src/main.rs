@@ -1,11 +1,32 @@
 use clap::Parser as ClapParser;
-use oxidolib::interpreter::Interpreter;
-use oxidolib::lexer::Lexer;
-use oxidolib::{parser::Parser, run, version, Config};
 use rustyline::error::ReadlineError;
 use rustyline::DefaultEditor;
-use std::fs::{metadata, read_to_string};
-use std::process::exit;
+use std::{fs::{metadata, read_to_string},process::exit,time::Instant};
+
+mod ast;
+mod data;
+mod error;
+mod interpreter;
+mod lexer;
+mod parser;
+mod standardlibrary;
+mod token;
+
+pub struct Config {
+	debug: bool,
+	dry_run: bool,
+	time: bool,
+}
+
+impl Config {
+	pub fn new(debug: bool, dry_run: bool, time: bool) -> Self {
+		Self {
+			debug,
+			dry_run,
+			time,
+		}
+	}
+}
 
 #[derive(ClapParser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -71,7 +92,7 @@ fn main() {
 			version()
 		);
 		let mut rl = DefaultEditor::new().unwrap();
-		let mut interpreter = Interpreter::new("REPL", String::new());
+		let mut interpreter = interpreter::Interpreter::new("REPL", String::new());
 		loop {
 			let readline = rl.readline("\x1b[1m\x1b[32m[In]:\x1b[0m ");
 			match readline {
@@ -84,8 +105,8 @@ fn main() {
 					print!("\x1b[1m\x1b[31m[Out]:\x1b[0m ");
 
 					interpreter.run(
-						Parser::new("REPL", "")
-							.run(Lexer::new("REPL", &line).run().unwrap().to_vec())
+						parser::Parser::new("REPL", "")
+							.run(lexer::Lexer::new("REPL", &line).run().unwrap().to_vec())
 							.unwrap()
 							.to_vec(),
 					);
@@ -113,4 +134,41 @@ fn main() {
 	let config = Config::new(args.debug, args.dry_run, args.time);
 
 	run(args.input.unwrap_or_default(), contents, config);
+}
+
+pub fn version() -> String {
+	env!("CARGO_PKG_VERSION").to_string()
+}
+
+pub fn run(name: String, contents: String, config: Config) {
+	let main = Instant::now();
+
+	let mut lexer = lexer::Lexer::new(&name, &contents);
+	let tokens = lexer.run().unwrap();
+
+	if config.debug {
+		let duration = main.elapsed();
+		println!("LEXER: {tokens:?}\n\nTIME: {duration:?}\n");
+	}
+
+	let parser = parser::Parser::new(&name, &contents);
+	let ast = parser.run(tokens.to_vec()).unwrap();
+
+	if config.debug {
+		let duration = main.elapsed();
+		println!("AST: {ast:?}\n\nTIME: {duration:?}\n");
+	}
+	if config.dry_run {
+		return;
+	}
+
+	let mut interpreter = interpreter::Interpreter::new(&name, contents);
+	interpreter.run(ast.to_vec());
+
+	if config.debug || config.time {
+		let duration = main.elapsed();
+		println!("\nTIME: {duration:?}");
+	}
+
+	println!()
 }
