@@ -22,8 +22,7 @@
       - [int()](#int)
       - [bool()](#bool)
 
-
-Oxido is a dynamic interpreted programming language basing most of its syntax on Rust.
+Oxido is a statically typed interpreted programming language for making CLI tools and scripts.
 
 ## Files:
 
