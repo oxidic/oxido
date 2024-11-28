@@ -2,8 +2,8 @@ let a: vec<int> = [];
 
 print("Enter number of values to be read: ");
 
-let n = int(read());
-let i = 0;
+let n: int = int(read());
+let i: int = 0;
 
 loop {
     if i == n {
@@ -16,9 +16,9 @@ loop {
 
 print("Enter value to be searched: ");
 
-let x = int(read());
+let x: int = int(read());
 
-let found = false;
+let found: bool = false;
 
 i = 0;
 

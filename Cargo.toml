@@ -1,6 +1,6 @@
 [package]
 name = "oxido"
-version = "2.6.0"
+version = "2.6.1"
 edition = "2021"
 
 [profile.release]
@@ -14,5 +14,4 @@ debug = true
 [dependencies]
 clap = { version = "3.1.18", features = ["derive"] }
 codespan-reporting = "0.11.1"
-inkwell = { version = "0.4.0", features = ["llvm17-0"] }
 rustyline = "11.0.0"
